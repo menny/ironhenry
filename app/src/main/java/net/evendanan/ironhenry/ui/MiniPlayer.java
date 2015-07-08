@@ -100,7 +100,7 @@ public class MiniPlayer implements StoryPlayerListener {
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
             Palette palette = Palette.from(resource).generate();
-            Palette.Swatch swatch = palette.getLightVibrantSwatch();
+            Palette.Swatch swatch = palette.getVibrantSwatch();
             if (swatch != null) {
                 mRootView.setBackgroundColor(swatch.getRgb());
                 mTitle.setTextColor(swatch.getTitleTextColor());

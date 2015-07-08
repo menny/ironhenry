@@ -1,8 +1,6 @@
 package net.evendanan.ironhenry.ui;
 
 import android.graphics.Bitmap;
-import android.graphics.drawable.AnimationDrawable;
-import android.graphics.drawable.RotateDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -15,7 +13,6 @@ import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -39,6 +36,7 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
     private CollapsingToolbarLayout mCollapsingToolbar;
     private FloatingActionButton mFab;
     private StoryPlayer mPlayer;
+    private TextView mPostText;
 
     public static PostFragment create(@NonNull Post post) {
         Bundle args = new Bundle();
@@ -72,8 +70,8 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
         ImageView postImage = (ImageView) view.findViewById(R.id.backdrop);
         Glide.with(getActivity()).load(mPost.featuredImage.source).asBitmap().listener(new PaletteSetter()).into(postImage);
 
-        TextView text = (TextView) view.findViewById(R.id.post);
-        text.setText(Html.fromHtml(mPost.htmlContent));
+        mPostText = (TextView) view.findViewById(R.id.post);
+        mPostText.setText(Html.fromHtml(mPost.htmlContent));
 
         mFab = (FloatingActionButton) view.findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
@@ -147,11 +145,18 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
             Palette palette = Palette.from(resource).generate();
-            Palette.Swatch swatch = palette.getVibrantSwatch();
-            if (swatch != null) {
-                mCollapsingToolbar.setContentScrimColor(swatch.getRgb());
-                mCollapsingToolbar.setExpandedTitleColor(swatch.getBodyTextColor());
-                mCollapsingToolbar.setCollapsedTitleTextColor(swatch.getTitleTextColor());
+            Palette.Swatch topSwatch = palette.getLightVibrantSwatch();
+            if (topSwatch != null) {
+                mCollapsingToolbar.setContentScrimColor(topSwatch.getRgb());
+                mCollapsingToolbar.setExpandedTitleColor(topSwatch.getBodyTextColor());
+                mCollapsingToolbar.setCollapsedTitleTextColor(topSwatch.getTitleTextColor());
+            }
+
+            Palette.Swatch bodySwatch = palette.getDarkVibrantSwatch();
+            View rootView = getView();
+            if (topSwatch != null && rootView != null) {
+                rootView.setBackgroundColor(bodySwatch.getRgb());
+                mPostText.setTextColor(bodySwatch.getBodyTextColor());
             }
             return false;
         }

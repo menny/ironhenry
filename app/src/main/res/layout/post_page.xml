@@ -65,7 +65,6 @@
         app:layout_anchor="@id/collapsing_toolbar"
         app:layout_anchorGravity="bottom|right|end"
         android:clickable="true"
-
         app:elevation="6dp"
         app:fabSize="normal" />
 
