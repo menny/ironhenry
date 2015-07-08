@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Storynory</string>
+
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_example">Example action</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="drawer_item_latest_posts">Latest posts</string>
+    <string name="drawer_item_about_app">About…</string>
+    <string name="lastest_stories_feed_title">Latest stories</string>
+    <string name="fail_to_load_audio">Can not load audio. Try later.</string>
+    <string name="player_cover_art">Currently playing cover</string>
+    <string name="player_action_button">Play Pause</string>
+</resources>

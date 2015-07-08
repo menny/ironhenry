@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/navigation_item_latest_posts"
+            android:checked="true"
+            android:title="@string/drawer_item_latest_posts"/>
+        <item
+            android:id="@+id/navigation_item_about"
+            android:title="@string/drawer_item_about_app"/>
+    </group>
+</menu>
