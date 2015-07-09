@@ -15,7 +15,7 @@ public class Post implements Parcelable {
     private static final Pattern msLinkPattern = Pattern.compile("href=\"(http[^\"]*.mp3)\"", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     @SerializedName("ID")
-    public final long ID;
+    public final int ID;
     @SerializedName("title")
     public final String title;
     @SerializedName("content")
@@ -29,7 +29,7 @@ public class Post implements Parcelable {
     @SerializedName("featured_image")
     public final FeatureImage featuredImage;
 
-    public Post(long id, String title, String htmlContent, String link, String modified, String excerpt, FeatureImage featuredImage) {
+    public Post(int id, String title, String htmlContent, String link, String modified, String excerpt, FeatureImage featuredImage) {
         ID = id;
         this.title = title;
         this.htmlContent = htmlContent;
@@ -40,7 +40,7 @@ public class Post implements Parcelable {
     }
 
     protected Post(Parcel in) {
-        ID = in.readLong();
+        ID = in.readInt();
         title = in.readString();
         htmlContent = in.readString();
         link = in.readString();

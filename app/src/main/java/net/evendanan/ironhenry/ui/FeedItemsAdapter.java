@@ -23,6 +23,9 @@ import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
+import java.util.Collections;
+import java.util.List;
+
 public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.ViewHolder> {
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -62,7 +65,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
     }
 
     @NonNull
-    private final Post[] mPostsList;
+    private final List<Post> mPostsList;
     private final Context mContext;
     private final LayoutInflater mLayoutInflater;
 
@@ -70,10 +73,10 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
     private final int mDefaultSecondaryColor;
     private final int mDefaultBackgroundColor;
 
-    public FeedItemsAdapter(Context context, @NonNull Post[] posts) {
+    public FeedItemsAdapter(Context context, @NonNull List<Post> posts) {
         mContext = Preconditions.checkNotNull(context);
         mLayoutInflater = LayoutInflater.from(context);
-        mPostsList = posts;
+        mPostsList = Collections.unmodifiableList(Preconditions.checkNotNull(posts));
         mDefaultPrimaryColor = context.getResources().getColor(R.color.primary_text);
         mDefaultSecondaryColor = context.getResources().getColor(R.color.secondary_text);
         mDefaultBackgroundColor = context.getResources().getColor(R.color.primary);
@@ -87,7 +90,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        Post item = mPostsList[position];
+        Post item = mPostsList.get(position);
         Glide.with(mContext).load(item.featuredImage.source).asBitmap().listener(new PaletteSetter(holder)).into(holder.imageView);
         holder.title.setText(item.title);
         holder.excerpt.setText(Html.fromHtml(item.excerpt));
@@ -96,7 +99,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
 
     @Override
     public int getItemCount() {
-        return mPostsList.length;
+        return mPostsList.size();
     }
 
     private class PaletteSetter implements RequestListener<String, Bitmap> {

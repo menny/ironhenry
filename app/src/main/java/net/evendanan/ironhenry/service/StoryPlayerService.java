@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlayerPlayerService extends Service implements StoryPlayer, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnPreparedListener {
+public class StoryPlayerService extends Service implements StoryPlayer, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnPreparedListener {
 
     private final LocalBinder mLocalBinder = new LocalBinder();
     private final MediaPlayer mMediaPlayer;
@@ -33,7 +33,7 @@ public class PlayerPlayerService extends Service implements StoryPlayer, MediaPl
     @NonNull
     private final List<StoryPlayerListener> mStoryPlayerListeners = new ArrayList<>();
 
-    public PlayerPlayerService() {
+    public StoryPlayerService() {
         mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.setOnErrorListener(this);
@@ -136,7 +136,7 @@ public class PlayerPlayerService extends Service implements StoryPlayer, MediaPl
     }
 
     public static void bind(@NonNull Context context, @NonNull ServiceConnection serviceConnection) {
-        Intent service = new Intent(Preconditions.checkNotNull(context), PlayerPlayerService.class);
+        Intent service = new Intent(Preconditions.checkNotNull(context), StoryPlayerService.class);
         //by first starting the service, we are ensuring that it will not be auto-killed
         //when the activity is unbinding.
         context.startService(service);
@@ -147,7 +147,7 @@ public class PlayerPlayerService extends Service implements StoryPlayer, MediaPl
 
         public void addListener(@NonNull StoryPlayerListener listener) {
             mStoryPlayerListeners.add(Preconditions.checkNotNull(listener));
-            listener.onPlayerStateChanged(PlayerPlayerService.this);
+            listener.onPlayerStateChanged(StoryPlayerService.this);
         }
 
         public void removeListener(@NonNull StoryPlayerListener listener) {
