@@ -5,8 +5,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -40,9 +38,9 @@ public class MiniPlayer implements StoryPlayerListener {
 
     public MiniPlayer(@NonNull View miniPlayerRootView) {
         mRootView = Preconditions.checkNotNull(miniPlayerRootView);
-        mCoverArt = Preconditions.checkNotNull((ImageView)miniPlayerRootView.findViewById(R.id.player_cover_art));
-        mTitle = Preconditions.checkNotNull((TextView)miniPlayerRootView.findViewById(R.id.player_story_title));
-        mPlayerActionButton = Preconditions.checkNotNull((ImageView)miniPlayerRootView.findViewById(R.id.player_action_button));
+        mCoverArt = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_cover_art));
+        mTitle = Preconditions.checkNotNull((TextView) miniPlayerRootView.findViewById(R.id.player_story_title));
+        mPlayerActionButton = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_action_button));
         mPlayerActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,26 +66,19 @@ public class MiniPlayer implements StoryPlayerListener {
         mPlayer = player;
         if (mCurrentPlayingPost == null) {
             if (mRootView.getVisibility() != View.GONE) {
-                mRootView.clearAnimation();
                 mRootView.setVisibility(View.GONE);
-                Animation slideOut = AnimationUtils.loadAnimation(mRootView.getContext(), R.anim.mini_player_slide_out);
-                mRootView.startAnimation(slideOut);
             }
         } else {
             if (mRootView.getVisibility() != View.VISIBLE) {
-                mRootView.clearAnimation();
                 mRootView.setVisibility(View.VISIBLE);
-                Animation slideOut = AnimationUtils.loadAnimation(mRootView.getContext(), R.anim.mini_player_slide_in);
-                mRootView.startAnimation(slideOut);
             }
             if (postChanged) {
                 Glide.with(mRootView.getContext()).load(mCurrentPlayingPost.featuredImage.source).asBitmap().listener(new PaletteSetter()).into(mCoverArt);
+                mTitle.setText(mCurrentPlayingPost.title);
             }
-            mTitle.setText(mCurrentPlayingPost.title);
-            mPlayerActionButton.setImageResource(player.isPlaying()? R.drawable.ic_pause_audio : R.drawable.ic_play_audio);
+            mPlayerActionButton.setImageResource(player.isPlaying() ? R.drawable.ic_pause_audio : R.drawable.ic_play_audio);
         }
     }
-
 
 
     private class PaletteSetter implements RequestListener<String, Bitmap> {
@@ -100,7 +91,7 @@ public class MiniPlayer implements StoryPlayerListener {
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
             Palette palette = Palette.from(resource).generate();
-            Palette.Swatch swatch = palette.getVibrantSwatch();
+            Palette.Swatch swatch = palette.getDarkMutedSwatch();
             if (swatch != null) {
                 mRootView.setBackgroundColor(swatch.getRgb());
                 mTitle.setTextColor(swatch.getTitleTextColor());

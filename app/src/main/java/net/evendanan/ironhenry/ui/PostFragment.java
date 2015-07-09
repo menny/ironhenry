@@ -145,16 +145,17 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
             Palette palette = Palette.from(resource).generate();
-            Palette.Swatch topSwatch = palette.getLightVibrantSwatch();
+            //using the highest population for the toolbar, so the text will have the maximum contrast.
+            Palette.Swatch topSwatch = PaletteUtils.getHighestPopulationSwatch(palette.getSwatches());
             if (topSwatch != null) {
                 mCollapsingToolbar.setContentScrimColor(topSwatch.getRgb());
                 mCollapsingToolbar.setExpandedTitleColor(topSwatch.getBodyTextColor());
                 mCollapsingToolbar.setCollapsedTitleTextColor(topSwatch.getTitleTextColor());
             }
 
-            Palette.Swatch bodySwatch = palette.getDarkVibrantSwatch();
+            Palette.Swatch bodySwatch = palette.getLightVibrantSwatch();
             View rootView = getView();
-            if (topSwatch != null && rootView != null) {
+            if (bodySwatch != null && rootView != null) {
                 rootView.setBackgroundColor(bodySwatch.getRgb());
                 mPostText.setTextColor(bodySwatch.getBodyTextColor());
             }
