@@ -20,7 +20,6 @@
             app:expandedTitleMarginStart="24dp"
             app:expandedTitleMarginEnd="32dp">
 
-
             <ImageView
                 android:id="@+id/backdrop"
                 android:layout_width="match_parent"

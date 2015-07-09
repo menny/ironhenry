@@ -151,6 +151,9 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
                 mCollapsingToolbar.setContentScrimColor(topSwatch.getRgb());
                 mCollapsingToolbar.setExpandedTitleColor(topSwatch.getBodyTextColor());
                 mCollapsingToolbar.setCollapsedTitleTextColor(topSwatch.getTitleTextColor());
+                mCollapsingToolbar.setForeground(new HeroGradientDrawable(topSwatch));
+            } else {
+                mCollapsingToolbar.setForeground(getResources().getDrawable(R.drawable.collapsing_toolbar_foreground));
             }
 
             Palette.Swatch bodySwatch = palette.getLightVibrantSwatch();
