@@ -98,6 +98,7 @@ public class MainActivity extends FragmentChauffeurActivity {
         super.onDestroy();
         if (mPlayerBinder != null) mPlayerBinder.removeListener(mMiniPlayer);
         unbindService(mPlayerServiceConnection);
+        unbindService(mPostsServiceConnection);
     }
 
     @Override

@@ -12,26 +12,34 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.model.Posts;
 
-import retrofit.Callback;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+
 import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 import retrofit.converter.GsonConverter;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.observables.ConnectableObservable;
+import rx.schedulers.Schedulers;
 
 public class PostsModelService extends Service implements PostsModel {
 
+    public static final String LOCAL_POSTS_CACHE_JSON = "local_posts_cache.json";
 
-    private static StorynoryRestBackend createService() {
-        Gson gson = new GsonBuilder().create();
-
+    private StorynoryRestBackend createService() {
         return new RestAdapter.Builder()
                 .setEndpoint("http://www.storynory.com")
-                .setConverter(new GsonConverter(gson))
+                .setConverter(new GsonConverter(Preconditions.checkNotNull(mGson)))
                 .build().create(StorynoryRestBackend.class);
     }
+
+    @NonNull
+    private final Gson mGson = new GsonBuilder().create();
 
     @NonNull
     private final LocalBinder mLocalBinder = new LocalBinder();
@@ -46,24 +54,69 @@ public class PostsModelService extends Service implements PostsModel {
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+
+        Observable.<Posts>create(subscriber -> {
+            try {
+                final InputStreamReader reader = new InputStreamReader(openFileInput(LOCAL_POSTS_CACHE_JSON));
+                Posts posts = mGson.fromJson(reader, Posts.class);
+                subscriber.onNext(posts);
+                subscriber.onCompleted();
+                reader.close();
+            } catch (FileNotFoundException e) {
+                //no matter.
+            } catch (IOException e) {
+                subscriber.onError(e);
+            }
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(posts -> mPosts = posts);
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return mLocalBinder;
     }
 
     @Override
     public Posts getPosts(final PostsModelListener listener) {
-        mRestBackend.getLatestPosts(new Callback<Post[]>() {
-            @Override
-            public void success(Post[] posts, Response response) {
-                mPosts.addPosts(posts);
-                listener.onPostsModelChanged(mPosts);
-            }
+        //read from network
+        mRestBackend.getLatestPosts()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(posts -> {
+                    //updating local in-memory in UI thread
+                    mPosts.addPosts(posts);
 
-            @Override
-            public void failure(RetrofitError error) {
-                listener.onPostsModelFetchError();
-            }
-        });
+                    //continuing chain:
+                    ConnectableObservable<Posts> postsObservable = Observable.just(mPosts).publish();
+                    //storing to disk
+                    postsObservable
+                            .observeOn(Schedulers.io())
+                            .subscribe(postsModel -> {
+                                try {
+                                    FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, Context.MODE_PRIVATE);
+                                    OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+                                    mGson.toJson(postsModel, writer);
+                                    writer.close();
+                                } catch (IOException e) {
+                                    //no matter.
+                                }
+                            });
+
+                    //notifying UI
+                    postsObservable
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(listener::onPostsModelChanged);
+
+                    postsObservable.connect();
+                }, throwable -> {
+                    listener.onPostsModelChanged(mPosts);
+                    listener.onPostsModelFetchError();
+                });
+
         return mPosts;
     }
 
