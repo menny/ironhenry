@@ -8,7 +8,6 @@ import android.support.v7.graphics.Palette;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -134,24 +133,16 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
 
     public void addPosts(List<Post> posts) {
         if (mPostsList.size() == 0) {
-            Log.d("GGGGG", "Adding All "+posts.size());
-            for (Post post : posts) {
-                Log.d("GGGGG", "New post "+post.ID+" added");
-            }
             //this is the case where we updating the initial set
             mPostsList.addAll(posts);
             notifyItemRangeInserted(0, posts.size());
         } else {
-            Log.d("GGGGG", "got "+posts.size()+" new posts");
             //now we are adding new items
             for (Post post : posts) {
                 final int insertPosition = findInsertPositionForPost(post);
                 if (insertPosition >= 0) {
-                    Log.d("GGGGG", "post "+post.ID+" will be inserted at "+insertPosition);
                     mPostsList.add(insertPosition, post);
                     notifyItemInserted(insertPosition);
-                } else {
-                    Log.d("GGGGG", "post "+post.ID+" already exists in the list");
                 }
             }
         }
