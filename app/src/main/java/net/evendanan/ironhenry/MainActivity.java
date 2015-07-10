@@ -52,7 +52,9 @@ public class MainActivity extends FragmentChauffeurActivity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mPostsBinder = (PostsModelService.LocalBinder) service;
-            if (mTempPostsModelListener != null) mPostsBinder.getPosts(mTempPostsModelListener);
+            if (mTempPostsModelListener != null) {
+                mTempPostsModelListener.onPostsModelChanged(mPostsBinder.getPosts(mTempPostsModelListener));
+            }
         }
 
         @Override

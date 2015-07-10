@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -49,12 +50,14 @@ public class PostsFeedFragment extends PassengerFragment {
     };
 
     private PostsModel mPostsModel;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private void setPosts(@NonNull List<Post> posts) {
         Context context = getActivity();
         if (context == null) return;
         FeedItemsAdapter adapter = new FeedItemsAdapter(context, posts);
         mFeedsList.setAdapter(adapter);
+        mSwipeRefreshLayout.setRefreshing(false);
     }
 
     private RecyclerView mFeedsList;
@@ -82,9 +85,14 @@ public class PostsFeedFragment extends PassengerFragment {
         CollapsingToolbarLayout collapsingToolbar = (CollapsingToolbarLayout) view.findViewById(R.id.collapsing_toolbar);
         collapsingToolbar.setTitle(getText(R.string.lastest_stories_feed_title));
 
+        mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout.setOnRefreshListener(() -> mPostsModel.getPosts(mOnFeedAvailable));
+
         Posts postsModel = mPostsModel.getPosts(mOnFeedAvailable);
         if (postsModel != null && postsModel.posts.size() > 0) {
             setPosts(postsModel.posts);
+        } else {
+            mSwipeRefreshLayout.setRefreshing(true);
         }
     }
 }
