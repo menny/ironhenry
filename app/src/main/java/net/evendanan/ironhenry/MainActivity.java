@@ -1,9 +1,6 @@
 package net.evendanan.ironhenry;
 
-import android.content.ComponentName;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 
@@ -13,13 +10,16 @@ import net.evendanan.ironhenry.model.Posts;
 import net.evendanan.ironhenry.service.PostsModel;
 import net.evendanan.ironhenry.service.PostsModelListener;
 import net.evendanan.ironhenry.service.PostsModelService;
-import net.evendanan.ironhenry.service.StoryPlayerService;
 import net.evendanan.ironhenry.service.StoryPlayerListener;
+import net.evendanan.ironhenry.service.StoryPlayerService;
 import net.evendanan.ironhenry.ui.MiniPlayer;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
+import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
 import io.fabric.sdk.android.Fabric;
+import rx.Observable;
+import rx.Subscription;
 
 public class MainActivity extends FragmentChauffeurActivity {
 
@@ -29,39 +29,11 @@ public class MainActivity extends FragmentChauffeurActivity {
     @Nullable
     private StoryPlayerListener mTempPlayerStateListener;
 
-    private final ServiceConnection mPlayerServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mPlayerBinder = (StoryPlayerService.LocalBinder) service;
-            if (mTempPlayerStateListener != null) mPlayerBinder.addListener(mTempPlayerStateListener);
-            mPlayerBinder.addListener(mMiniPlayer);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mPlayerBinder = null;
-        }
-    };
-
     @Nullable
     private PostsModel mPostsBinder;
     @Nullable
     private PostsModelListener mTempPostsModelListener;
 
-    private final ServiceConnection mPostsServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mPostsBinder = (PostsModelService.LocalBinder) service;
-            if (mTempPostsModelListener != null) {
-                mTempPostsModelListener.onPostsModelChanged(mPostsBinder.getPosts(mTempPostsModelListener));
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mPlayerBinder = null;
-        }
-    };
     private final PostsModel mPostsModelProxy = new PostsModel() {
         @Override
         public Posts getPosts(PostsModelListener listener) {
@@ -73,6 +45,8 @@ public class MainActivity extends FragmentChauffeurActivity {
             }
         }
     };
+    private Subscription mPlayerSubscription;
+    private Subscription mPostsModelSubscription;
 
 
     @Override
@@ -91,16 +65,30 @@ public class MainActivity extends FragmentChauffeurActivity {
         */
 
         mMiniPlayer = new MiniPlayer(findViewById(R.id.mini_player));
-        StoryPlayerService.bind(this, mPlayerServiceConnection);
-        PostsModelService.bind(this, mPostsServiceConnection);
+
+        mPlayerSubscription = Observable.create(new OnSubscribeBindService(this, StoryPlayerService.class))
+                .subscribe(localBinder -> {
+                    mPlayerBinder = (StoryPlayerService.LocalBinder) localBinder;
+                    if (mTempPlayerStateListener != null)
+                        mPlayerBinder.addListener(mTempPlayerStateListener);
+                    mPlayerBinder.addListener(mMiniPlayer);
+                });
+
+        mPostsModelSubscription = Observable.create(new OnSubscribeBindService(this, PostsModelService.class))
+                .subscribe(localBinder -> {
+                    mPostsBinder = (PostsModel) localBinder;
+                    if (mTempPostsModelListener != null) {
+                        mTempPostsModelListener.onPostsModelChanged(mPostsBinder.getPosts(mTempPostsModelListener));
+                    }
+                });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (mPlayerBinder != null) mPlayerBinder.removeListener(mMiniPlayer);
-        unbindService(mPlayerServiceConnection);
-        unbindService(mPostsServiceConnection);
+        mPlayerSubscription.unsubscribe();
+        mPostsModelSubscription.unsubscribe();
     }
 
     @Override

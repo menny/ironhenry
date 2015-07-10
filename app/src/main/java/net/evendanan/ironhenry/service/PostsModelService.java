@@ -87,46 +87,25 @@ public class PostsModelService extends Service implements PostsModel {
         mRestBackend.getLatestPosts()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(posts -> {
+                .map(postsArray -> {
                     //updating local in-memory in UI thread
-                    mPosts.addPosts(posts);
-
-                    //continuing chain:
-                    ConnectableObservable<Posts> postsObservable = Observable.just(mPosts).publish();
-                    //storing to disk
-                    postsObservable
-                            .observeOn(Schedulers.io())
-                            .subscribe(postsModel -> {
-                                try {
-                                    FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, BuildConfig.DEBUG? Context.MODE_WORLD_READABLE : Context.MODE_PRIVATE);
-                                    OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-                                    mGson.toJson(postsModel, writer);
-                                    writer.close();
-                                } catch (IOException e) {
-                                    //no matter.
-                                }
-                            });
-
-                    //notifying UI
-                    postsObservable
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe(listener::onPostsModelChanged);
-
-                    postsObservable.connect();
-                }, throwable -> {
+                    mPosts.addPosts(postsArray);
                     listener.onPostsModelChanged(mPosts);
-                    listener.onPostsModelFetchError();
-                });
+                    return mPosts;
+                })
+                .observeOn(Schedulers.io())//back to IO thread
+                .subscribe(posts -> {
+                    try {
+                        FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, BuildConfig.DEBUG ? Context.MODE_WORLD_READABLE : Context.MODE_PRIVATE);
+                        OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+                        mGson.toJson(mPosts, writer);
+                        writer.close();
+                    } catch (IOException e) {
+                        //no matter.
+                    }
+                }, throwable -> listener.onPostsModelFetchError());
 
         return mPosts;
-    }
-
-    public static void bind(Context context, ServiceConnection serviceConnection) {
-        Intent service = new Intent(Preconditions.checkNotNull(context), PostsModelService.class);
-        //by first starting the service, we are ensuring that it will not be auto-killed
-        //when the activity is unbinding.
-        context.startService(service);
-        context.bindService(service, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     public class LocalBinder extends Binder implements PostsModel {

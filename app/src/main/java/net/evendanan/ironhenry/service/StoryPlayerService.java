@@ -135,14 +135,6 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
     }
 
-    public static void bind(@NonNull Context context, @NonNull ServiceConnection serviceConnection) {
-        Intent service = new Intent(Preconditions.checkNotNull(context), StoryPlayerService.class);
-        //by first starting the service, we are ensuring that it will not be auto-killed
-        //when the activity is unbinding.
-        context.startService(service);
-        context.bindService(service, serviceConnection, Context.BIND_AUTO_CREATE);
-    }
-
     public class LocalBinder extends Binder {
 
         public void addListener(@NonNull StoryPlayerListener listener) {
