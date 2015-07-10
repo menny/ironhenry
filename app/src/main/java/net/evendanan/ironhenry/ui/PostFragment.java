@@ -34,7 +34,6 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
     private Post mPost;
     private FloatingActionButton mFab;
     private StoryPlayer mPlayer;
-    private TextView mPostText;
 
     public static PostFragment create(@NonNull Post post) {
         Bundle args = new Bundle();
@@ -67,8 +66,8 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         ImageView postImage = (ImageView) view.findViewById(R.id.backdrop);
         Glide.with(getActivity()).load(mPost.featuredImage.source).asBitmap().listener(new PaletteSetter()).into(postImage);
 
-        mPostText = (TextView) view.findViewById(R.id.post);
-        mPostText.setText(Html.fromHtml(mPost.htmlContent));
+        TextView postText = (TextView) view.findViewById(R.id.post);
+        postText.setText(Html.fromHtml(mPost.htmlContent));
 
         mFab = (FloatingActionButton) view.findViewById(R.id.fab);
         mFab.setOnClickListener(v -> {
@@ -140,12 +139,6 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
             //using the highest population for the toolbar, so the text will have the maximum contrast.
             final Palette.Swatch highestPopulationSwatch = PaletteUtils.getHighestPopulationSwatch(palette.getSwatches());
             setToolbarColors(highestPopulationSwatch);
-
-            Palette.Swatch bodySwatch = highestPopulationSwatch == palette.getLightVibrantSwatch()? palette.getVibrantSwatch() : palette.getLightVibrantSwatch();
-            if (bodySwatch != null) {
-                mPostText.setBackgroundColor(bodySwatch.getRgb());
-                mPostText.setTextColor(bodySwatch.getBodyTextColor());
-            }
             return false;
         }
     }
