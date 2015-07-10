@@ -18,4 +18,8 @@ public interface StoryPlayer {
 
     @Nullable
     Post getCurrentlyPlayingPost();
+
+    int getPlayDuration();
+
+    int getCurrentPlayPosition();
 }

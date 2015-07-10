@@ -2,9 +2,7 @@ package net.evendanan.ironhenry.service;
 
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -45,7 +43,8 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     public void onDestroy() {
         mMediaPlayer.stop();
         mMediaPlayer.release();
-        for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+        for (StoryPlayerListener listener : mStoryPlayerListeners)
+            listener.onPlayerStateChanged(this);
         super.onDestroy();
     }
 
@@ -57,7 +56,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     public boolean startAudio(@NonNull Post post) throws IOException {
         Preconditions.checkNotNull(post);
 
-        PackageManager packageManager =getPackageManager();
+        PackageManager packageManager = getPackageManager();
         Intent restartAppIntent = packageManager.getLaunchIntentForPackage(BuildConfig.APPLICATION_ID);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
@@ -76,11 +75,13 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
             mMediaPlayer.reset();
             mMediaPlayer.setDataSource(this, post.extractStoryAudioLink());
             mMediaPlayer.prepareAsync();
-            for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+            for (StoryPlayerListener listener : mStoryPlayerListeners)
+                listener.onPlayerStateChanged(this);
             return false;
         } else {
             mMediaPlayer.start();
-            for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+            for (StoryPlayerListener listener : mStoryPlayerListeners)
+                listener.onPlayerStateChanged(this);
             return true;
         }
     }
@@ -89,7 +90,8 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         if (mMediaPlayer.isPlaying()) {
             stopForeground(true);
             mMediaPlayer.pause();
-            for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+            for (StoryPlayerListener listener : mStoryPlayerListeners)
+                listener.onPlayerStateChanged(this);
         }
     }
 
@@ -111,28 +113,42 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     }
 
     @Override
+    public int getPlayDuration() {
+        return mMediaPlayer.getDuration();
+    }
+
+    @Override
+    public int getCurrentPlayPosition() {
+        return mMediaPlayer.getCurrentPosition();
+    }
+
+    @Override
     public void onCompletion(MediaPlayer mp) {
         mCurrentlyPlayingPost = null;
-        for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+        for (StoryPlayerListener listener : mStoryPlayerListeners)
+            listener.onPlayerStateChanged(this);
 
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+        for (StoryPlayerListener listener : mStoryPlayerListeners)
+            listener.onPlayerStateChanged(this);
         return false;
     }
 
     @Override
     public void onSeekComplete(MediaPlayer mp) {
         stopForeground(true);
-        for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+        for (StoryPlayerListener listener : mStoryPlayerListeners)
+            listener.onPlayerStateChanged(this);
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
-        for (StoryPlayerListener listener : mStoryPlayerListeners) listener.onPlayerStateChanged(this);
+        for (StoryPlayerListener listener : mStoryPlayerListeners)
+            listener.onPlayerStateChanged(this);
     }
 
     public class LocalBinder extends Binder {
@@ -147,4 +163,9 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         }
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        stopSelf();
+    }
 }
