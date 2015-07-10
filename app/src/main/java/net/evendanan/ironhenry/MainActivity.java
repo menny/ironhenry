@@ -52,7 +52,9 @@ public class MainActivity extends FragmentChauffeurActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
+        if (!BuildConfig.DEBUG) {
+            Fabric.with(this, new Crashlytics());
+        }
         setContentView(R.layout.activity_main);
 /*
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
