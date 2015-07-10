@@ -8,6 +8,7 @@ import android.support.v7.graphics.Palette;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +24,7 @@ import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.ViewHolder> {
@@ -73,10 +74,10 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
     private final int mDefaultSecondaryColor;
     private final int mDefaultBackgroundColor;
 
-    public FeedItemsAdapter(Context context, @NonNull List<Post> posts) {
+    public FeedItemsAdapter(Context context) {
         mContext = Preconditions.checkNotNull(context);
         mLayoutInflater = LayoutInflater.from(context);
-        mPostsList = Collections.unmodifiableList(Preconditions.checkNotNull(posts));
+        mPostsList = new ArrayList<>();
         mDefaultPrimaryColor = context.getResources().getColor(R.color.primary_text);
         mDefaultSecondaryColor = context.getResources().getColor(R.color.secondary_text);
         mDefaultBackgroundColor = context.getResources().getColor(R.color.primary);
@@ -130,4 +131,40 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
             return false;
         }
     }
+
+    public void addPosts(List<Post> posts) {
+        if (mPostsList.size() == 0) {
+            Log.d("GGGGG", "Adding All "+posts.size());
+            for (Post post : posts) {
+                Log.d("GGGGG", "New post "+post.ID+" added");
+            }
+            //this is the case where we updating the initial set
+            mPostsList.addAll(posts);
+            notifyItemRangeInserted(0, posts.size());
+        } else {
+            Log.d("GGGGG", "got "+posts.size()+" new posts");
+            //now we are adding new items
+            for (Post post : posts) {
+                final int insertPosition = findInsertPositionForPost(post);
+                if (insertPosition >= 0) {
+                    Log.d("GGGGG", "post "+post.ID+" will be inserted at "+insertPosition);
+                    mPostsList.add(insertPosition, post);
+                    notifyItemInserted(insertPosition);
+                } else {
+                    Log.d("GGGGG", "post "+post.ID+" already exists in the list");
+                }
+            }
+        }
+    }
+
+    private int findInsertPositionForPost(Post newPost) {
+        int insertPosition = 0;
+        for (Post existingPost : mPostsList) {
+            if (existingPost.ID == newPost.ID) return -1;
+            if (existingPost.ID < newPost.ID) return insertPosition;
+            insertPosition++;
+        }
+        return insertPosition;
+    }
+
 }

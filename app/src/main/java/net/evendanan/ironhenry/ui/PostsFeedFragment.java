@@ -9,6 +9,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ public class PostsFeedFragment extends PassengerFragment {
     private final PostsModelListener mOnFeedAvailable = new PostsModelListener() {
         @Override
         public void onPostsModelChanged(Posts posts) {
+            mSwipeRefreshLayout.setRefreshing(false);
             setPosts(posts.posts);
         }
 
@@ -37,10 +39,12 @@ public class PostsFeedFragment extends PassengerFragment {
         public void onPostsModelFetchError() {
             View parent = getView();
             if (parent == null) return;
+            mSwipeRefreshLayout.setRefreshing(false);
             Snackbar.make(parent, "Can't fetch stories.", Snackbar.LENGTH_LONG)
                     .setAction("Retry", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
+                            mSwipeRefreshLayout.setRefreshing(true);
                             mPostsModel.getPosts(mOnFeedAvailable);
                         }
                     })
@@ -51,16 +55,13 @@ public class PostsFeedFragment extends PassengerFragment {
 
     private PostsModel mPostsModel;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private FeedItemsAdapter mFeedItemsAdapter;
 
     private void setPosts(@NonNull List<Post> posts) {
         Context context = getActivity();
         if (context == null) return;
-        FeedItemsAdapter adapter = new FeedItemsAdapter(context, posts);
-        mFeedsList.setAdapter(adapter);
-        mSwipeRefreshLayout.setRefreshing(false);
+        mFeedItemsAdapter.addPosts(posts);
     }
-
-    private RecyclerView mFeedsList;
 
     @Nullable
     @Override
@@ -78,9 +79,11 @@ public class PostsFeedFragment extends PassengerFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mFeedsList = (RecyclerView) view.findViewById(R.id.feed_items);
-        mFeedsList.addItemDecoration(new MarginDecoration(getActivity()));
-        mFeedsList.setLayoutManager(new LinearLayoutManager(getActivity()));
+        RecyclerView feedsList = (RecyclerView) view.findViewById(R.id.feed_items);
+        feedsList.addItemDecoration(new MarginDecoration(getActivity()));
+        feedsList.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mFeedItemsAdapter = new FeedItemsAdapter(getActivity());
+        feedsList.setAdapter(mFeedItemsAdapter);
 
         CollapsingToolbarLayout collapsingToolbar = (CollapsingToolbarLayout) view.findViewById(R.id.collapsing_toolbar);
         collapsingToolbar.setTitle(getText(R.string.lastest_stories_feed_title));
@@ -92,6 +95,11 @@ public class PostsFeedFragment extends PassengerFragment {
         if (postsModel != null && postsModel.posts.size() > 0) {
             setPosts(postsModel.posts);
         } else {
+            /* Workaround ahead: https://code.google.com/p/android/issues/detail?id=77712*/
+            TypedValue typed_value = new TypedValue();
+            getActivity().getTheme().resolveAttribute(android.support.v7.appcompat.R.attr.actionBarSize, typed_value, true);
+            mSwipeRefreshLayout.setProgressViewOffset(false, 0, getResources().getDimensionPixelSize(typed_value.resourceId));
+            /*End of workaround*/
             mSwipeRefreshLayout.setRefreshing(true);
         }
     }
