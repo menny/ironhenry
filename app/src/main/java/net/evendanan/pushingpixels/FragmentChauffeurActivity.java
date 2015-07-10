@@ -16,6 +16,7 @@
 
 package net.evendanan.pushingpixels;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -25,6 +26,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+
+import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
 
@@ -51,6 +54,14 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
             intent.putExtra(KEY_FRAGMENT_ARGS_TO_ADD, fragmentArgs);
         }
         intent.putExtra(KEY_FRAGMENT_AS_ROOT, false);
+    }
+
+    @NonNull
+    public static Intent addingFragmentToUi(@NonNull Class<? extends FragmentChauffeurActivity> mainActivityClass,  @NonNull Context context, @NonNull Fragment fragment) {
+        Intent intent = new Intent(Preconditions.checkNotNull(context), Preconditions.checkNotNull(mainActivityClass));
+        addIntentArgsForAddingFragmentToUi(intent, fragment.getClass(), fragment.getArguments());
+
+        return intent;
     }
 
     public static void addIntentArgsForSettingRootFragmentToUi(@NonNull Intent intent, @NonNull Class<? extends Fragment> fragmentClass, @Nullable Bundle fragmentArgs) {

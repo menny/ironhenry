@@ -74,25 +74,22 @@ public class PostFragment extends PassengerFragment implements StoryPlayerListen
         mPostText.setText(Html.fromHtml(mPost.htmlContent));
 
         mFab = (FloatingActionButton) view.findViewById(R.id.fab);
-        mFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mPlayer == null) return;
-                if (isPlayingMyPost()) {
-                    mFab.setImageResource(R.drawable.ic_play_audio);
-                    mPlayer.pauseAudio();
-                } else {
-                    mFab.setImageResource(R.drawable.ic_pause_audio);
-                    try {
-                        if (!mPlayer.startAudio(mPost)) {
-                            mFab.setImageResource(R.drawable.ic_loading_audio);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        View rootView = getView();
-                        if (rootView != null) {
-                            Snackbar.make(rootView, R.string.fail_to_load_audio, Snackbar.LENGTH_LONG).show();
-                        }
+        mFab.setOnClickListener(v -> {
+            if (mPlayer == null) return;
+            if (isPlayingMyPost()) {
+                mFab.setImageResource(R.drawable.ic_play_audio);
+                mPlayer.pauseAudio();
+            } else {
+                mFab.setImageResource(R.drawable.ic_pause_audio);
+                try {
+                    if (!mPlayer.startAudio(mPost)) {
+                        mFab.setImageResource(R.drawable.ic_loading_audio);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    View rootView = getView();
+                    if (rootView != null) {
+                        Snackbar.make(rootView, R.string.fail_to_load_audio, Snackbar.LENGTH_LONG).show();
                     }
                 }
             }

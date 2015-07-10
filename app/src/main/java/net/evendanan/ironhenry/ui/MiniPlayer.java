@@ -1,5 +1,7 @@
 package net.evendanan.ironhenry.ui;
 
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -13,10 +15,12 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
 
+import net.evendanan.ironhenry.MainActivity;
 import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.service.StoryPlayer;
 import net.evendanan.ironhenry.service.StoryPlayerListener;
+import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
 import java.io.IOException;
 
@@ -41,21 +45,25 @@ public class MiniPlayer implements StoryPlayerListener {
         mCoverArt = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_cover_art));
         mTitle = Preconditions.checkNotNull((TextView) miniPlayerRootView.findViewById(R.id.player_story_title));
         mPlayerActionButton = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_action_button));
-        mPlayerActionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mCurrentPlayingPost == null) return;
-                if (mPlayer == null) return;
-                if (mPlayer.isPlaying()) {
-                    mPlayer.pauseAudio();
-                } else {
-                    try {
-                        mPlayer.startAudio(mCurrentPlayingPost);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        mPlayerActionButton.setOnClickListener(v -> {
+            if (mCurrentPlayingPost == null) return;
+            if (mPlayer == null) return;
+            if (mPlayer.isPlaying()) {
+                mPlayer.pauseAudio();
+            } else {
+                try {
+                    mPlayer.startAudio(mCurrentPlayingPost);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
+        });
+
+        miniPlayerRootView.setOnClickListener(v -> {
+            if (mCurrentPlayingPost == null) return;
+            final Context context = v.getContext();
+            Intent startPostPage = FragmentChauffeurActivity.addingFragmentToUi(MainActivity.class, context, PostFragment.create(mCurrentPlayingPost));
+            context.startActivity(startPostPage);
         });
     }
 

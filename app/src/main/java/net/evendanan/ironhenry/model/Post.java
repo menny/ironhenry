@@ -39,7 +39,7 @@ public class Post implements Parcelable {
         this.featuredImage = featuredImage;
     }
 
-    protected Post(Parcel in) {
+    private Post(Parcel in) {
         ID = in.readInt();
         title = in.readString();
         htmlContent = in.readString();
@@ -68,7 +68,7 @@ public class Post implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeLong(ID);
+        dest.writeInt(ID);
         dest.writeString(title);
         dest.writeString(htmlContent);
         dest.writeString(link);

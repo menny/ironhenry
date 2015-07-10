@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import net.evendanan.ironhenry.BuildConfig;
 import net.evendanan.ironhenry.model.Posts;
 
 import java.io.FileNotFoundException;
@@ -97,7 +98,7 @@ public class PostsModelService extends Service implements PostsModel {
                             .observeOn(Schedulers.io())
                             .subscribe(postsModel -> {
                                 try {
-                                    FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, Context.MODE_PRIVATE);
+                                    FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, BuildConfig.DEBUG? Context.MODE_WORLD_READABLE : Context.MODE_PRIVATE);
                                     OutputStreamWriter writer = new OutputStreamWriter(outputStream);
                                     mGson.toJson(postsModel, writer);
                                     writer.close();

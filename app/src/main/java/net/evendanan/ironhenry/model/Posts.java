@@ -15,12 +15,7 @@ public class Posts implements Parcelable {
 
     @SerializedName("posts")
     public final List<Post> posts;
-    private static final Comparator<? super Post> msPostsIdComparator = new Comparator<Post>() {
-        @Override
-        public int compare(Post lhs, Post rhs) {
-            return lhs.ID - rhs.ID;
-        }
-    };
+    private static final Comparator<? super Post> msPostsIdComparator = (lhs, rhs) -> lhs.ID - rhs.ID;
 
     public Posts() {
         posts = new ArrayList<>();
