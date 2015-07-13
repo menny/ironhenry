@@ -17,8 +17,13 @@ import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.model.Posts;
 import net.evendanan.ironhenry.service.PostsModel;
 import net.evendanan.ironhenry.service.PostsModelListener;
+import net.evendanan.ironhenry.service.PostsModelService;
+import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
 import java.util.List;
+
+import rx.Observable;
+import rx.Subscription;
 
 public class PostsFeedFragment extends CollapsibleFragmentBase {
 
@@ -38,8 +43,10 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                     .setAction("Retry", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            mSwipeRefreshLayout.setRefreshing(true);
-                            mPostsModel.getPosts(mOnFeedAvailable);
+                            if (mPostsModel != null) {
+                                mSwipeRefreshLayout.setRefreshing(true);
+                                mPostsModel.getPosts(mOnFeedAvailable);
+                            }
                         }
                     })
                     .show(); // Don’t forget to show!
@@ -47,6 +54,9 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
         }
     };
 
+    private Subscription mModelSubscription;
+
+    @Nullable
     private PostsModel mPostsModel;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private FeedItemsAdapter mFeedItemsAdapter;
@@ -55,12 +65,6 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
         Context context = getActivity();
         if (context == null) return;
         mFeedItemsAdapter.addPosts(posts);
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mPostsModel = getMainActivity().getPostsModel();
     }
 
     @Override
@@ -75,19 +79,32 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
         getCollapsingToolbar().setTitle(getText(R.string.lastest_stories_feed_title));
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
-        mSwipeRefreshLayout.setOnRefreshListener(() -> mPostsModel.getPosts(mOnFeedAvailable));
+        mSwipeRefreshLayout.setOnRefreshListener(() -> {
+            if (mPostsModel != null) mPostsModel.getPosts(mOnFeedAvailable);
+        });
+        
+        mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
+                .subscribe(localBinder -> {
+                    mPostsModel = (PostsModelService.LocalBinder) localBinder;
+                    Posts postsModel = mPostsModel.getPosts(mOnFeedAvailable);
+                    if (postsModel != null && postsModel.posts.size() > 0) {
+                        setPosts(postsModel.posts);
+                    } else {
+                        /* Workaround ahead: https://code.google.com/p/android/issues/detail?id=77712*/
+                        TypedValue typed_value = new TypedValue();
+                        getActivity().getTheme().resolveAttribute(android.support.v7.appcompat.R.attr.actionBarSize, typed_value, true);
+                        mSwipeRefreshLayout.setProgressViewOffset(false, 0, getResources().getDimensionPixelSize(typed_value.resourceId));
+                        /*End of workaround*/
+                        mSwipeRefreshLayout.setRefreshing(true);
+                    }
+                });
 
-        Posts postsModel = mPostsModel.getPosts(mOnFeedAvailable);
-        if (postsModel != null && postsModel.posts.size() > 0) {
-            setPosts(postsModel.posts);
-        } else {
-            /* Workaround ahead: https://code.google.com/p/android/issues/detail?id=77712*/
-            TypedValue typed_value = new TypedValue();
-            getActivity().getTheme().resolveAttribute(android.support.v7.appcompat.R.attr.actionBarSize, typed_value, true);
-            mSwipeRefreshLayout.setProgressViewOffset(false, 0, getResources().getDimensionPixelSize(typed_value.resourceId));
-            /*End of workaround*/
-            mSwipeRefreshLayout.setRefreshing(true);
-        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mModelSubscription.unsubscribe();
     }
 
     @LayoutRes

@@ -23,8 +23,13 @@ import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.service.StoryPlayer;
 import net.evendanan.ironhenry.service.StoryPlayerListener;
+import net.evendanan.ironhenry.service.StoryPlayerService;
+import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
 import java.io.IOException;
+
+import rx.Observable;
+import rx.Subscription;
 
 public class PostFragment extends CollapsibleFragmentBase implements StoryPlayerListener {
 
@@ -34,6 +39,10 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
     private Post mPost;
     private FloatingActionButton mFab;
     private StoryPlayer mPlayer;
+
+    private Subscription mPlayerSubscription;
+    @Nullable
+    private StoryPlayerService.LocalBinder mPlayerBinder;
 
     public static PostFragment create(@NonNull Post post) {
         Bundle args = new Bundle();
@@ -95,18 +104,19 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         if (audioLink == null) {
             mFab.setVisibility(View.GONE);
         }
+
+        mPlayerSubscription = Observable.create(new OnSubscribeBindService(getActivity(), StoryPlayerService.class))
+                .subscribe(localBinder -> {
+                    mPlayerBinder = (StoryPlayerService.LocalBinder) localBinder;
+                    mPlayerBinder.addListener(PostFragment.this);
+                });
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        getMainActivity().setPlayerStateListener(this);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        getMainActivity().setPlayerStateListener(null);
+    public void onDestroyView() {
+        super.onDestroyView();
+        mPlayerSubscription.unsubscribe();
+        if (mPlayerBinder != null) mPlayerBinder.removeListener(this);
     }
 
     private boolean isPlayingMyPost() {

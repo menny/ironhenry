@@ -34,8 +34,6 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     private Post mCurrentlyPlayingPost;
     private boolean mLoading;
 
-    @NonNull
-    private final List<StoryPlayerListener> mStoryPlayerListeners = new ArrayList<>();
     @Nullable
     private Subscription mPlayingSubscription;
 
@@ -52,8 +50,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
         mMediaPlayer.stop();
         mMediaPlayer.release();
-        for (StoryPlayerListener listener : mStoryPlayerListeners)
-            listener.onPlayerStateChanged(this);
+        mLocalBinder.onPlayerStateChanged(this);
         super.onDestroy();
     }
 
@@ -86,13 +83,11 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
             mMediaPlayer.reset();
             mMediaPlayer.setDataSource(this, post.extractStoryAudioLink());
             mMediaPlayer.prepareAsync();
-            for (StoryPlayerListener listener : mStoryPlayerListeners)
-                listener.onPlayerStateChanged(this);
+            mLocalBinder.onPlayerStateChanged(this);
             return false;
         } else if (!mLoading) {
             mMediaPlayer.start();
-            for (StoryPlayerListener listener : mStoryPlayerListeners)
-                listener.onPlayerStateChanged(this);
+            mLocalBinder.onPlayerStateChanged(this);
             return true;
         } else {
             return false;
@@ -103,8 +98,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         if (mMediaPlayer.isPlaying() && !mLoading) {
             stopForeground(true);
             mMediaPlayer.pause();
-            for (StoryPlayerListener listener : mStoryPlayerListeners)
-                listener.onPlayerStateChanged(this);
+            mLocalBinder.onPlayerStateChanged(this);
         }
     }
 
@@ -142,27 +136,25 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        stopForeground(true);
         if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
         mLoading = false;
         mCurrentlyPlayingPost = null;
-        for (StoryPlayerListener listener : mStoryPlayerListeners)
-            listener.onPlayerStateChanged(this);
+        mLocalBinder.onPlayerStateChanged(this);
 
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        stopForeground(true);
         mLoading = false;
-        for (StoryPlayerListener listener : mStoryPlayerListeners)
-            listener.onPlayerStateChanged(this);
+        mLocalBinder.onPlayerStateChanged(this);
         return false;
     }
 
     @Override
     public void onSeekComplete(MediaPlayer mp) {
-        stopForeground(true);
-        for (StoryPlayerListener listener : mStoryPlayerListeners)
-            listener.onPlayerStateChanged(this);
+        mLocalBinder.onPlayerStateChanged(this);
     }
 
     @Override
@@ -172,12 +164,19 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         mPlayingSubscription = Observable.interval(16, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(time -> {
-                    for (StoryPlayerListener listener : mStoryPlayerListeners)
-                        listener.onPlayerStateChanged(this);
+                    mLocalBinder.onPlayerStateChanged(this);
                 });
     }
 
     public class LocalBinder extends Binder {
+
+        @NonNull
+        private final List<StoryPlayerListener> mStoryPlayerListeners = new ArrayList<>();
+
+        private void onPlayerStateChanged(StoryPlayer player) {
+            for (StoryPlayerListener listener : mStoryPlayerListeners)
+                listener.onPlayerStateChanged(player);
+        }
 
         public void addListener(@NonNull StoryPlayerListener listener) {
             mStoryPlayerListeners.add(Preconditions.checkNotNull(listener));
