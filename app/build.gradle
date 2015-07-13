@@ -18,21 +18,34 @@ repositories {
     maven { url 'https://maven.fabric.io/public' }
 }
 
+version versionbuilder.VersionBuilder.buildGitVersionName()
+
+println "Building Storynory "+version
+
 android {
     compileSdkVersion 22
     buildToolsVersion "22.0.1"
 
     defaultConfig {
+        versionCode versionbuilder.VersionBuilder.buildGitVersionNumber()
+        versionName project.version
         applicationId "net.evendanan.ironhenry"
         minSdkVersion 15
         targetSdkVersion 22
-        versionCode 1
-        versionName "0.0.1"
+    }
+    signingConfigs {
+        release {
+            storeFile file("iron_henry_releasekey.keystore")
+            storePassword System.getenv("IRONHENRY_STORE_PASSWORD")
+            keyAlias "iron_henry"
+            keyPassword System.getenv("IRONHENRY_KEY_PASSWORD")
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }

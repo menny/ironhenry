@@ -8,3 +8,5 @@ fabric.properties
 .DS_Store
 build/
 /captures
+iron_henry_releasekey.keystore
+setup_signing_env.sh
