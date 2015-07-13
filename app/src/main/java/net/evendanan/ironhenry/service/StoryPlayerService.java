@@ -20,6 +20,11 @@ import net.evendanan.ironhenry.model.Post;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 
 public class StoryPlayerService extends Service implements StoryPlayer, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnPreparedListener {
 
@@ -27,9 +32,12 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     private final MediaPlayer mMediaPlayer;
     @Nullable
     private Post mCurrentlyPlayingPost;
+    private boolean mLoading;
 
     @NonNull
     private final List<StoryPlayerListener> mStoryPlayerListeners = new ArrayList<>();
+    @Nullable
+    private Subscription mPlayingSubscription;
 
     public StoryPlayerService() {
         mMediaPlayer = new MediaPlayer();
@@ -41,6 +49,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public void onDestroy() {
+        if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
         mMediaPlayer.stop();
         mMediaPlayer.release();
         for (StoryPlayerListener listener : mStoryPlayerListeners)
@@ -71,6 +80,8 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         startForeground(R.id.story_playing, builder.build());
 
         if (mCurrentlyPlayingPost == null || mCurrentlyPlayingPost.ID != post.ID) {
+            if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
+            mLoading = true;
             mCurrentlyPlayingPost = post;
             mMediaPlayer.reset();
             mMediaPlayer.setDataSource(this, post.extractStoryAudioLink());
@@ -78,16 +89,18 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
             for (StoryPlayerListener listener : mStoryPlayerListeners)
                 listener.onPlayerStateChanged(this);
             return false;
-        } else {
+        } else if (!mLoading) {
             mMediaPlayer.start();
             for (StoryPlayerListener listener : mStoryPlayerListeners)
                 listener.onPlayerStateChanged(this);
             return true;
+        } else {
+            return false;
         }
     }
 
     public void pauseAudio() {
-        if (mMediaPlayer.isPlaying()) {
+        if (mMediaPlayer.isPlaying() && !mLoading) {
             stopForeground(true);
             mMediaPlayer.pause();
             for (StoryPlayerListener listener : mStoryPlayerListeners)
@@ -96,15 +109,20 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     }
 
     public void seek(int seconds) {
-        if (mMediaPlayer.isPlaying()) {
+        if (mMediaPlayer.isPlaying() && !mLoading) {
             int seekPosition = Math.max(0, mMediaPlayer.getCurrentPosition() + seconds * 1000);
             seekPosition = Math.min(mMediaPlayer.getDuration(), seekPosition);
             mMediaPlayer.seekTo(seekPosition);
         }
     }
 
+    @Override
+    public boolean isLoading() {
+        return mLoading;
+    }
+
     public boolean isPlaying() {
-        return mMediaPlayer.isPlaying();
+        return (!mLoading) && mMediaPlayer.isPlaying();
     }
 
     @Nullable
@@ -114,16 +132,18 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public int getPlayDuration() {
-        return mMediaPlayer.getDuration();
+        return mLoading? -1 : mMediaPlayer.getDuration();
     }
 
     @Override
     public int getCurrentPlayPosition() {
-        return mMediaPlayer.getCurrentPosition();
+        return mLoading? -1 : mMediaPlayer.getCurrentPosition();
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
+        mLoading = false;
         mCurrentlyPlayingPost = null;
         for (StoryPlayerListener listener : mStoryPlayerListeners)
             listener.onPlayerStateChanged(this);
@@ -132,6 +152,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        mLoading = false;
         for (StoryPlayerListener listener : mStoryPlayerListeners)
             listener.onPlayerStateChanged(this);
         return false;
@@ -146,9 +167,14 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public void onPrepared(MediaPlayer mp) {
+        mLoading = false;
         mp.start();
-        for (StoryPlayerListener listener : mStoryPlayerListeners)
-            listener.onPlayerStateChanged(this);
+        mPlayingSubscription = Observable.interval(16, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(time -> {
+                    for (StoryPlayerListener listener : mStoryPlayerListeners)
+                        listener.onPlayerStateChanged(this);
+                });
     }
 
     public class LocalBinder extends Binder {

@@ -20,44 +20,8 @@
             android:layout_height="0px"
             android:layout_weight="1"/>
 
-        <LinearLayout
-            android:id="@+id/mini_player"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:padding="4dp"
-            android:visibility="gone"
-            android:orientation="horizontal"
-            android:weightSum="1">
-            <ImageView
-                android:id="@+id/player_cover_art"
-                android:contentDescription="@string/player_cover_art"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:scaleType="centerCrop"
-                android:layout_gravity="center_vertical"/>
-            <TextView
-                android:id="@+id/player_story_title"
-                android:layout_width="0px"
-                android:layout_height="44dp"
-                android:layout_gravity="center_vertical"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:paddingLeft="8dp"
-                android:paddingRight="8dp"/>
+        <include layout="@layout/mini_player"/>
 
-            <ImageView
-                android:contentDescription="@string/player_action_button"
-                android:id="@+id/player_action_button"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:scaleType="centerInside"
-                android:layout_gravity="center"
-                android:paddingEnd="8dp"
-                android:paddingRight="8dp"
-                tools:ignore="RtlSymmetry"/>
-        </LinearLayout>
     </LinearLayout>
     <android.support.design.widget.NavigationView
         android:layout_width="wrap_content"

@@ -22,4 +22,6 @@ public interface StoryPlayer {
     int getPlayDuration();
 
     int getCurrentPlayPosition();
+
+    boolean isLoading();
 }

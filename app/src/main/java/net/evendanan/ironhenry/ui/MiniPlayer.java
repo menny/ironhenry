@@ -3,6 +3,7 @@ package net.evendanan.ironhenry.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
@@ -34,6 +35,12 @@ public class MiniPlayer implements StoryPlayerListener {
     private final TextView mTitle;
     @NonNull
     private final ImageView mPlayerActionButton;
+    @NonNull
+    private final View mSeeBarView;
+    @NonNull
+    private final View mPositionView;
+    @NonNull
+    private final View mLoadingStoryView;
 
     @Nullable
     private Post mCurrentPlayingPost;
@@ -44,13 +51,17 @@ public class MiniPlayer implements StoryPlayerListener {
         mRootView = Preconditions.checkNotNull(miniPlayerRootView);
         mCoverArt = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_cover_art));
         mTitle = Preconditions.checkNotNull((TextView) miniPlayerRootView.findViewById(R.id.player_story_title));
+        mSeeBarView = Preconditions.checkNotNull(miniPlayerRootView.findViewById(R.id.seek_bar_layout));
+        mPositionView = Preconditions.checkNotNull(miniPlayerRootView.findViewById(R.id.seek_bar_position_icon));
+        mLoadingStoryView = Preconditions.checkNotNull(miniPlayerRootView.findViewById(R.id.seek_bar_loading));
+
         mPlayerActionButton = Preconditions.checkNotNull((ImageView) miniPlayerRootView.findViewById(R.id.player_action_button));
         mPlayerActionButton.setOnClickListener(v -> {
             if (mCurrentPlayingPost == null) return;
             if (mPlayer == null) return;
             if (mPlayer.isPlaying()) {
                 mPlayer.pauseAudio();
-            } else {
+            } else if (!mPlayer.isLoading()) {
                 try {
                     mPlayer.startAudio(mCurrentPlayingPost);
                 } catch (IOException e) {
@@ -69,9 +80,9 @@ public class MiniPlayer implements StoryPlayerListener {
 
     @Override
     public void onPlayerStateChanged(StoryPlayer player) {
+        mPlayer = player;
         final boolean postChanged = mCurrentPlayingPost != player.getCurrentlyPlayingPost();
         mCurrentPlayingPost = player.getCurrentlyPlayingPost();
-        mPlayer = player;
         if (mCurrentPlayingPost == null) {
             if (mRootView.getVisibility() != View.GONE) {
                 mRootView.setVisibility(View.GONE);
@@ -80,12 +91,39 @@ public class MiniPlayer implements StoryPlayerListener {
             if (mRootView.getVisibility() != View.VISIBLE) {
                 mRootView.setVisibility(View.VISIBLE);
             }
+            if (mPlayer.isLoading()) {
+                if (mLoadingStoryView.getVisibility() != View.VISIBLE) {
+                    mLoadingStoryView.setVisibility(View.VISIBLE);
+                    mSeeBarView.setVisibility(View.GONE);
+                }
+            } else {
+                if (mSeeBarView.getVisibility() != View.VISIBLE) {
+                    mSeeBarView.setVisibility(View.VISIBLE);
+                    mLoadingStoryView.setVisibility(View.GONE);
+                }
+                final int positionInView = calculateSeekBarPositionInView(player);
+                mPositionView.setPadding(positionInView, 0, 0, 0);
+            }
             if (postChanged) {
                 Glide.with(mRootView.getContext()).load(mCurrentPlayingPost.featuredImage.source).asBitmap().listener(new PaletteSetter()).into(mCoverArt);
                 mTitle.setText(mCurrentPlayingPost.title);
             }
-            mPlayerActionButton.setImageResource(player.isPlaying() ? R.drawable.ic_pause_audio : R.drawable.ic_play_audio);
+            @DrawableRes final int actionButtonResId;
+            if (player.isLoading()) actionButtonResId = R.drawable.ic_loading_audio;
+            else if (player.isPlaying()) actionButtonResId = R.drawable.ic_pause_audio;
+             else actionButtonResId = R.drawable.ic_play_audio;
+            mPlayerActionButton.setImageResource(actionButtonResId);
         }
+    }
+
+    private int calculateSeekBarPositionInView(StoryPlayer player) {
+        final int duration = player.getPlayDuration();
+        final int currentPosition = player.getCurrentPlayPosition();
+        if (duration <= 0 || currentPosition < 0) return 0;
+        final double positionFraction = Math.min(1.0, ((double) currentPosition) / ((double) duration));
+        final int totalWidth = mRootView.getWidth();
+        final int pointPosition = (int) (totalWidth * positionFraction);
+        return Math.max(0, pointPosition);
     }
 
 
