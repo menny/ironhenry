@@ -3,7 +3,6 @@ package net.evendanan.ironhenry.service;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -25,7 +24,6 @@ import retrofit.RestAdapter;
 import retrofit.converter.GsonConverter;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.observables.ConnectableObservable;
 import rx.schedulers.Schedulers;
 
 public class PostsModelService extends Service implements PostsModel {

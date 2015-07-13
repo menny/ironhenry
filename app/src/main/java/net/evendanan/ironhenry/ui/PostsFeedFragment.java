@@ -20,12 +20,15 @@ import net.evendanan.ironhenry.service.PostsModelListener;
 import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import rx.Observable;
 import rx.Subscription;
 
 public class PostsFeedFragment extends CollapsibleFragmentBase {
+
+    private static final String STATE_KEY_LOADED_POSTS_LIST = "STATE_KEY_LOADED_POSTS_LIST";
 
     private final PostsModelListener mOnFeedAvailable = new PostsModelListener() {
         @Override
@@ -75,14 +78,17 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
         feedsList.setLayoutManager(new LinearLayoutManager(getActivity()));
         mFeedItemsAdapter = new FeedItemsAdapter(getActivity());
         feedsList.setAdapter(mFeedItemsAdapter);
-
+        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_KEY_LOADED_POSTS_LIST)) {
+            List<Post> loadedPosts = savedInstanceState.getParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST);
+            mFeedItemsAdapter.addPosts(loadedPosts);
+        }
         getCollapsingToolbar().setTitle(getText(R.string.lastest_stories_feed_title));
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setOnRefreshListener(() -> {
             if (mPostsModel != null) mPostsModel.getPosts(mOnFeedAvailable);
         });
-        
+
         mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
                 .subscribe(localBinder -> {
                     mPostsModel = (PostsModelService.LocalBinder) localBinder;
@@ -98,7 +104,15 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                         mSwipeRefreshLayout.setRefreshing(true);
                     }
                 });
+    }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        List<Post> loadedPosts = mFeedItemsAdapter.getPostsList();
+        if (loadedPosts != null && loadedPosts.size() > 0) {
+            outState.putParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST, new ArrayList<>(loadedPosts));
+        }
     }
 
     @Override

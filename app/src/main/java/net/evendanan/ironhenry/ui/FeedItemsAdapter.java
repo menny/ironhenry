@@ -158,4 +158,8 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
         return insertPosition;
     }
 
+    public List<Post> getPostsList() {
+        return mPostsList;
+    }
+
 }
