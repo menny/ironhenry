@@ -109,9 +109,11 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        List<Post> loadedPosts = mFeedItemsAdapter.getPostsList();
-        if (loadedPosts != null && loadedPosts.size() > 0) {
-            outState.putParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST, new ArrayList<>(loadedPosts));
+        if (mFeedItemsAdapter != null) {
+            List<Post> loadedPosts = mFeedItemsAdapter.getPostsList();
+            if (loadedPosts != null && loadedPosts.size() > 0) {
+                outState.putParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST, new ArrayList<>(loadedPosts));
+            }
         }
     }
 
