@@ -15,3 +15,5 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+# required for RetroLambda
+-dontwarn java.lang.invoke.*
