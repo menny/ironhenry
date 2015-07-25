@@ -89,4 +89,14 @@ public class Post implements Parcelable {
 
         return null;
     }
+
+    @Override
+    public int hashCode() {
+        return ID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Post && ((Post)o).ID == ID;
+    }
 }

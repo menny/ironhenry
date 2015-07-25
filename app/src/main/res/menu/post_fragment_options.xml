@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/download_post"
+        android:icon="@drawable/ic_offline_file"
+        android:visible="false"
+        app:showAsAction="ifRoom"
+        android:title="@string/download_post">
+    </item>
+    <item
+        android:id="@+id/downloading_post"
+        android:icon="@drawable/ic_remove_offline_file"
+        android:visible="false"
+        app:showAsAction="ifRoom"
+        android:title="@string/downloading_post">
+    </item>
+    <item
+        android:id="@+id/remove_post"
+        android:icon="@drawable/ic_remove_offline_file"
+        android:visible="false"
+        app:showAsAction="ifRoom"
+        android:title="@string/delete_post">
+    </item>
+</menu>

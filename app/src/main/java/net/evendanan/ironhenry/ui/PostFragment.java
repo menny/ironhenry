@@ -10,6 +10,9 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.graphics.Palette;
 import android.text.Html;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,7 +23,10 @@ import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
+import net.evendanan.ironhenry.model.OfflineState;
 import net.evendanan.ironhenry.model.Post;
+import net.evendanan.ironhenry.service.OfflineStateListener;
+import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.service.StoryPlayer;
 import net.evendanan.ironhenry.service.StoryPlayerListener;
 import net.evendanan.ironhenry.service.StoryPlayerService;
@@ -31,7 +37,7 @@ import java.io.IOException;
 import rx.Observable;
 import rx.Subscription;
 
-public class PostFragment extends CollapsibleFragmentBase implements StoryPlayerListener {
+public class PostFragment extends CollapsibleFragmentBase implements StoryPlayerListener, OfflineStateListener {
 
     private static final String ARG_KEY_POST = "ARG_KEY_POST";
     private static final String STATE_KEY_POST_SCROLL_POSITION = "STATE_KEY_POST_SCROLL_POSITION";
@@ -43,6 +49,12 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
     private Subscription mPlayerSubscription;
     @Nullable
     private StoryPlayerService.LocalBinder mPlayerBinder;
+
+    private Subscription mModelSubscription;
+    @Nullable
+    private PostsModelService.LocalBinder mModelBinder;
+    @Nullable
+    private OfflineState mPostOfflineState;
 
     public static PostFragment create(@NonNull Post post) {
         Bundle args = new Bundle();
@@ -58,6 +70,59 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mPost = getArguments().getParcelable(ARG_KEY_POST);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.post_fragment_options, menu);
+        MenuItem downloading = Preconditions.checkNotNull(menu.findItem(R.id.downloading_post));
+        downloading.setActionView(R.layout.downloading_post_progress);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        MenuItem download = Preconditions.checkNotNull(menu.findItem(R.id.download_post));
+        MenuItem downloading = Preconditions.checkNotNull(menu.findItem(R.id.downloading_post));
+        MenuItem remove = Preconditions.checkNotNull(menu.findItem(R.id.remove_post));
+        if (mPostOfflineState == null) {
+            download.setVisible(true);
+            downloading.setVisible(false);
+            remove.setVisible(false);
+        } else if (mPostOfflineState.getDownloadProgress() >= OfflineState.PROGRESS_FULL) {
+            download.setVisible(false);
+            downloading.setVisible(false);
+            remove.setVisible(true);
+        } else if (mPostOfflineState.getDownloadProgress() == OfflineState.PROGRESS_ERROR) {
+            download.setVisible(true);
+            downloading.setVisible(false);
+            remove.setVisible(false);
+        } else {
+            download.setVisible(false);
+            downloading.setVisible(true);
+            remove.setVisible(false);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (mModelBinder != null) {
+            switch (item.getItemId()) {
+                case R.id.download_post:
+                    mModelBinder.setPostOfflineState(mPost, true);
+                    return true;
+                case R.id.downloading_post:
+                case R.id.remove_post:
+                    mModelBinder.setPostOfflineState(mPost, false);
+                    return true;
+                default:
+                    return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     @LayoutRes
@@ -110,11 +175,19 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
                     mPlayerBinder = (StoryPlayerService.LocalBinder) localBinder;
                     mPlayerBinder.addListener(PostFragment.this);
                 });
+
+        mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
+                .subscribe(localBinder -> {
+                    mModelBinder = (PostsModelService.LocalBinder) localBinder;
+                    mModelBinder.addOfflineStateListener(PostFragment.this);
+                });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        mModelSubscription.unsubscribe();
+        if (mModelBinder != null) mModelBinder.removeOfflineStateListener(this);
         mPlayerSubscription.unsubscribe();
         if (mPlayerBinder != null) mPlayerBinder.removeListener(this);
     }
@@ -134,6 +207,38 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         } else {
             mFab.setImageResource(R.drawable.ic_play_audio);
         }
+    }
+
+    @Override
+    public void onOfflineStateChanged(@NonNull Iterable<OfflineState> offlineStates) {
+        final OfflineState previousState = mPostOfflineState;
+        mPostOfflineState = null;
+        for (OfflineState state : offlineStates) {
+            if (state.post.equals(mPost)) {
+                mPostOfflineState = state;
+                break;
+            }
+        }
+        if (!sameOfflineStateState(previousState, mPostOfflineState)) {
+            getActivity().supportInvalidateOptionsMenu();
+        }
+    }
+
+    private static boolean sameOfflineStateState(OfflineState previousState, OfflineState currentState) {
+        if (previousState != currentState) return false;
+        if (previousState == null) return true;
+        final int DOWNLOADING_STATE = 0;
+        final int COMPLETE_STATE = 1;
+        final int ERROR_STATE = 2;
+
+        final int previous = previousState.getDownloadProgress() == OfflineState.PROGRESS_FULL ? COMPLETE_STATE
+                : previousState.getDownloadProgress() == OfflineState.PROGRESS_ERROR ? ERROR_STATE
+                : DOWNLOADING_STATE;
+        final int current = currentState.getDownloadProgress() == OfflineState.PROGRESS_FULL ? COMPLETE_STATE
+                : currentState.getDownloadProgress() == OfflineState.PROGRESS_ERROR ? ERROR_STATE
+                : DOWNLOADING_STATE;
+
+        return previous == current;
     }
 
     private class PaletteSetter implements RequestListener<String, Bitmap> {

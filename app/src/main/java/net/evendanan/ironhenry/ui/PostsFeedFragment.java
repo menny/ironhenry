@@ -16,7 +16,7 @@ import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.model.Posts;
 import net.evendanan.ironhenry.service.PostsModel;
-import net.evendanan.ironhenry.service.PostsModelListener;
+import net.evendanan.ironhenry.service.PostsFetchCallback;
 import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
@@ -30,15 +30,15 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
 
     private static final String STATE_KEY_LOADED_POSTS_LIST = "STATE_KEY_LOADED_POSTS_LIST";
 
-    private final PostsModelListener mOnFeedAvailable = new PostsModelListener() {
+    private final PostsFetchCallback mOnFeedAvailable = new PostsFetchCallback() {
         @Override
-        public void onPostsModelChanged(Posts posts) {
+        public void onPostsFetchSuccess(@NonNull Posts posts) {
             mSwipeRefreshLayout.setRefreshing(false);
             setPosts(posts.posts);
         }
 
         @Override
-        public void onPostsModelFetchError() {
+        public void onPostsFetchError() {
             View parent = getView();
             if (parent == null) return;
             mSwipeRefreshLayout.setRefreshing(false);
@@ -48,7 +48,7 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                         public void onClick(View v) {
                             if (mPostsModel != null) {
                                 mSwipeRefreshLayout.setRefreshing(true);
-                                mPostsModel.getPosts(mOnFeedAvailable);
+                                mPostsModel.fetchPosts(mOnFeedAvailable);
                             }
                         }
                     })
@@ -82,17 +82,17 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
             List<Post> loadedPosts = savedInstanceState.getParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST);
             mFeedItemsAdapter.addPosts(loadedPosts);
         }
-        getCollapsingToolbar().setTitle(getText(R.string.lastest_stories_feed_title));
+        getCollapsingToolbar().setTitle(getText(R.string.latest_stories_feed_title));
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setOnRefreshListener(() -> {
-            if (mPostsModel != null) mPostsModel.getPosts(mOnFeedAvailable);
+            if (mPostsModel != null) mPostsModel.fetchPosts(mOnFeedAvailable);
         });
 
         mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
                 .subscribe(localBinder -> {
                     mPostsModel = (PostsModelService.LocalBinder) localBinder;
-                    Posts postsModel = mPostsModel.getPosts(mOnFeedAvailable);
+                    Posts postsModel = mPostsModel.fetchPosts(mOnFeedAvailable);
                     if (postsModel != null && postsModel.posts.size() > 0) {
                         setPosts(postsModel.posts);
                     } else {

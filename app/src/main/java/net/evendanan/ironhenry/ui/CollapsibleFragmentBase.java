@@ -8,6 +8,7 @@ import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.graphics.Palette;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,6 +52,13 @@ public abstract class CollapsibleFragmentBase extends PassengerFragment {
             int[] consumed = new int[2];
             behavior.onNestedPreScroll(coordinator, appBarLayout, null, 0, -dy, consumed);
         }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        Toolbar toolbar = (Toolbar) getView().findViewById(R.id.toolbar);
+        getMainActivity().setSupportActionBar(toolbar);
     }
 
     @Override
