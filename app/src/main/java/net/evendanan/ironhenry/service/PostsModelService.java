@@ -141,7 +141,7 @@ public class PostsModelService extends Service {
         }
     }
 
-    protected static Posts readPostsCacheFromStream(FileInputStream postsCacheStream, Gson gson) throws IOException {
+    private static Posts readPostsCacheFromStream(FileInputStream postsCacheStream, Gson gson) throws IOException {
         final InputStreamReader reader = new InputStreamReader(postsCacheStream);
         Posts posts = gson.fromJson(reader, Posts.class);
         reader.close();
@@ -283,6 +283,14 @@ public class PostsModelService extends Service {
                         mLocalBinder.onOfflineStateChanged(mOfflineStates.values());
                     });
         }
+    }
+
+    public static Uri getPlayableLinkForPost(Context context, Post post) {
+        //checking if the post has offline data
+        String filename = Preconditions.checkNotNull(getPostOfflineFilename(post));
+        File offlineData = new File(context.getFilesDir(), filename);
+        if (offlineData.exists()) return Uri.fromFile(offlineData);
+        else return post.extractStoryAudioLink();
     }
 
     public class LocalBinder extends Binder implements PostsModel {

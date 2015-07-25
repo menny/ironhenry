@@ -5,11 +5,13 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
+import android.util.Log;
 
 import com.google.common.base.Preconditions;
 
@@ -28,6 +30,7 @@ import rx.android.schedulers.AndroidSchedulers;
 
 public class StoryPlayerService extends Service implements StoryPlayer, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnPreparedListener {
 
+    private static final String TAG = StoryPlayerService.class.getName();
     private final LocalBinder mLocalBinder = new LocalBinder();
     private final MediaPlayer mMediaPlayer;
     @Nullable
@@ -81,7 +84,9 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
             mLoading = true;
             mCurrentlyPlayingPost = post;
             mMediaPlayer.reset();
-            mMediaPlayer.setDataSource(this, post.extractStoryAudioLink());
+            Uri audioLink = PostsModelService.getPlayableLinkForPost(this, post);
+            Log.d(TAG, "Playing audio for post " + post.ID + " from " + audioLink);
+            mMediaPlayer.setDataSource(this, audioLink);
             mMediaPlayer.prepareAsync();
             mLocalBinder.onPlayerStateChanged(this);
             return false;
