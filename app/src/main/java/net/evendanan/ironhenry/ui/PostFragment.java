@@ -39,6 +39,20 @@ import rx.Subscription;
 
 public class PostFragment extends CollapsibleFragmentBase implements StoryPlayerListener, OfflineStateListener {
 
+    private static final int NONE_STATE = -1;
+    private static final int DOWNLOADING_STATE = 0;
+    private static final int COMPLETE_STATE = 1;
+    private static final int ERROR_STATE = 2;
+
+    private static int getDownloadUiState(OfflineState state) {
+        if (state == null) return NONE_STATE;
+
+        return state.getDownloadProgress() == OfflineState.PROGRESS_FULL ? COMPLETE_STATE
+                : state.getDownloadProgress() == OfflineState.PROGRESS_ERROR ? ERROR_STATE
+                : DOWNLOADING_STATE;
+    }
+
+
     private static final String ARG_KEY_POST = "ARG_KEY_POST";
     private static final String STATE_KEY_POST_SCROLL_POSITION = "STATE_KEY_POST_SCROLL_POSITION";
 
@@ -53,8 +67,7 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
     private Subscription mModelSubscription;
     @Nullable
     private PostsModelService.LocalBinder mModelBinder;
-    @Nullable
-    private OfflineState mPostOfflineState;
+    private int mCurrentDownloadUiState = NONE_STATE;
 
     public static PostFragment create(@NonNull Post post) {
         Bundle args = new Bundle();
@@ -87,22 +100,27 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         MenuItem download = Preconditions.checkNotNull(menu.findItem(R.id.download_post));
         MenuItem downloading = Preconditions.checkNotNull(menu.findItem(R.id.downloading_post));
         MenuItem remove = Preconditions.checkNotNull(menu.findItem(R.id.remove_post));
-        if (mPostOfflineState == null) {
-            download.setVisible(true);
-            downloading.setVisible(false);
-            remove.setVisible(false);
-        } else if (mPostOfflineState.getDownloadProgress() >= OfflineState.PROGRESS_FULL) {
-            download.setVisible(false);
-            downloading.setVisible(false);
-            remove.setVisible(true);
-        } else if (mPostOfflineState.getDownloadProgress() == OfflineState.PROGRESS_ERROR) {
-            download.setVisible(true);
-            downloading.setVisible(false);
-            remove.setVisible(false);
-        } else {
-            download.setVisible(false);
-            downloading.setVisible(true);
-            remove.setVisible(false);
+        switch (mCurrentDownloadUiState) {
+            case COMPLETE_STATE:
+                download.setVisible(false);
+                downloading.setVisible(false);
+                remove.setVisible(true);
+                break;
+            case ERROR_STATE:
+            case NONE_STATE:
+                download.setVisible(true);
+                downloading.setVisible(false);
+                remove.setVisible(false);
+                break;
+            case DOWNLOADING_STATE:
+                download.setVisible(false);
+                downloading.setVisible(true);
+                remove.setVisible(false);
+                break;
+            default:
+                download.setVisible(false);
+                downloading.setVisible(false);
+                remove.setVisible(false);
         }
     }
 
@@ -211,34 +229,18 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
 
     @Override
     public void onOfflineStateChanged(@NonNull Iterable<OfflineState> offlineStates) {
-        final OfflineState previousState = mPostOfflineState;
-        mPostOfflineState = null;
+        OfflineState currentState = null;
         for (OfflineState state : offlineStates) {
             if (state.post.equals(mPost)) {
-                mPostOfflineState = state;
+                currentState = state;
                 break;
             }
         }
-        if (!sameOfflineStateState(previousState, mPostOfflineState)) {
+        final int newUiState = getDownloadUiState(currentState);
+        if (newUiState != mCurrentDownloadUiState) {
+            mCurrentDownloadUiState = newUiState;
             getActivity().supportInvalidateOptionsMenu();
         }
-    }
-
-    private static boolean sameOfflineStateState(OfflineState previousState, OfflineState currentState) {
-        if (previousState != currentState) return false;
-        if (previousState == null) return true;
-        final int DOWNLOADING_STATE = 0;
-        final int COMPLETE_STATE = 1;
-        final int ERROR_STATE = 2;
-
-        final int previous = previousState.getDownloadProgress() == OfflineState.PROGRESS_FULL ? COMPLETE_STATE
-                : previousState.getDownloadProgress() == OfflineState.PROGRESS_ERROR ? ERROR_STATE
-                : DOWNLOADING_STATE;
-        final int current = currentState.getDownloadProgress() == OfflineState.PROGRESS_FULL ? COMPLETE_STATE
-                : currentState.getDownloadProgress() == OfflineState.PROGRESS_ERROR ? ERROR_STATE
-                : DOWNLOADING_STATE;
-
-        return previous == current;
     }
 
     private class PaletteSetter implements RequestListener<String, Bitmap> {
