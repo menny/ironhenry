@@ -1,11 +1,20 @@
 package net.evendanan.ironhenry;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
+import android.view.Menu;
+import android.view.SubMenu;
 
 import com.crashlytics.android.Crashlytics;
+import com.google.common.base.Preconditions;
 
+import net.evendanan.ironhenry.model.Categories;
+import net.evendanan.ironhenry.model.Category;
+import net.evendanan.ironhenry.service.CategoriesCallback;
+import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.service.StoryPlayerService;
 import net.evendanan.ironhenry.ui.MiniPlayer;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
@@ -23,6 +32,31 @@ public class MainActivity extends FragmentChauffeurActivity {
     private Subscription mPlayerSubscription;
     @Nullable
     private StoryPlayerService.LocalBinder mPlayerBinder;
+    private Subscription mPostsSubscription;
+    private final CategoriesCallback mCategoriesAvailableHandler = new CategoriesCallback() {
+
+        @Override
+        public void onCategoriesAvailable(@NonNull Categories categories) {
+            Menu menu = mNavigationView.getMenu();
+            menu.clear();
+
+            //adding categories
+            SubMenu categoriesMenu = menu.addSubMenu(R.string.menu_story_categories_group);
+            for (Category category : categories.categories) {
+                if (category.isRootCategory()) {//showing only root categories
+                    //TODO Add intent to each category item which starts the appropriate fragment
+                    categoriesMenu.add(1, category.ID, category.ID, category.name);
+                    //TODO Add icon?
+                }
+            }
+            //adding static items
+            //TODO Add settings fragment intent
+            menu.add(R.string.action_settings);
+            //TODO Add about fragment intent
+            menu.add(R.string.drawer_item_about_app);
+        }
+    };
+    private NavigationView mNavigationView;
 
 
     @Override
@@ -32,22 +66,21 @@ public class MainActivity extends FragmentChauffeurActivity {
             Fabric.with(this, new Crashlytics());
         }
         setContentView(R.layout.activity_main);
-/*
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS, WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-        }
-        */
 
         mMiniPlayer = new MiniPlayer(findViewById(R.id.mini_player));
+
+        mNavigationView = Preconditions.checkNotNull((NavigationView) findViewById(R.id.side_navigation_view));
 
         mPlayerSubscription = Observable.create(new OnSubscribeBindService(this, StoryPlayerService.class))
                 .subscribe(localBinder -> {
                     mPlayerBinder = (StoryPlayerService.LocalBinder) localBinder;
                     mPlayerBinder.addListener(mMiniPlayer);
+                });
+
+        mPostsSubscription = Observable.create(new OnSubscribeBindService(this, PostsModelService.class))
+                .subscribe(localBinder -> {
+                    PostsModelService.LocalBinder binder = (PostsModelService.LocalBinder) localBinder;
+                    binder.setCategoriesListener(mCategoriesAvailableHandler);
                 });
     }
 
@@ -56,6 +89,7 @@ public class MainActivity extends FragmentChauffeurActivity {
         super.onDestroy();
         if (mPlayerBinder != null) mPlayerBinder.removeListener(mMiniPlayer);
         mPlayerSubscription.unsubscribe();
+        mPostsSubscription.unsubscribe();
     }
 
     @Override

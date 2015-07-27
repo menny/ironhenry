@@ -13,4 +13,6 @@ public interface PostsModel {
     void addOfflineStateListener(@NonNull OfflineStateListener listener);
 
     void removeOfflineStateListener(@NonNull OfflineStateListener listener);
+
+    void setCategoriesListener(@NonNull CategoriesCallback listener);
 }

@@ -12,11 +12,14 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.Pair;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import net.evendanan.ironhenry.model.Categories;
+import net.evendanan.ironhenry.model.Category;
 import net.evendanan.ironhenry.model.OfflineState;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.model.Posts;
@@ -32,10 +35,13 @@ import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import retrofit.RestAdapter;
+import retrofit.RetrofitError;
 import retrofit.converter.GsonConverter;
 import rx.Observable;
 import rx.Subscription;
@@ -46,14 +52,24 @@ public class PostsModelService extends Service {
 
     private static final String TAG = PostsModelService.class.getName();
 
+    private static final String LOCAL_CATEGORIES_CACHE_JSON = "local_categories_cache.json";
     private static final String LOCAL_POSTS_CACHE_JSON = "local_posts_cache.json";
     private static final String POST_DOWNLOAD_FILE_PREFIX = "post_download_";
+
+    private static <T> T readCacheFromStream(FileInputStream cacheStream, Gson gson, Class<T> clazz) throws IOException {
+        final InputStreamReader reader = new InputStreamReader(cacheStream);
+        T cachedModel = gson.fromJson(reader, clazz);
+        reader.close();
+        return cachedModel;
+    }
 
     private StorynoryRestBackend createService() {
         return new RestAdapter.Builder()
                 .setEndpoint("http://www.storynory.com")
                 .setConverter(new GsonConverter(Preconditions.checkNotNull(mGson)))
-                .build().create(StorynoryRestBackend.class);
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .build()
+                .create(StorynoryRestBackend.class);
     }
 
     @NonNull
@@ -68,6 +84,8 @@ public class PostsModelService extends Service {
     @NonNull
     private Posts mPosts = new Posts();
 
+    private Observable<Categories> mCategoriesCache;
+
     @NonNull
     private final Map<Post, OfflineState> mOfflineStates = new ArrayMap<>();
     @NonNull
@@ -80,10 +98,61 @@ public class PostsModelService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        mCategoriesCache = Observable.<Categories>create(subscriber -> {
+            SparseArray<Category> sparseArray = new SparseArray<>();
+            try {
+                //reading categories cache - so we'll have something quickly for the client
+                Categories cachedCategories = readCacheFromStream(openFileInput(LOCAL_CATEGORIES_CACHE_JSON), mGson, Categories.class);
+                subscriber.onNext(cachedCategories);
+                for (Category category : cachedCategories.categories) {
+                    sparseArray.put(category.ID, category);
+                }
+            } catch (IOException e) {
+                //no matter.
+                Log.w(TAG, "Failed to load categories from cache. That can happen.", e);
+            }
+            //now, we can check for new data in the backend
+            try {
+                Category[] backendCategories = mRestBackend.getCategories();
+                for (Category category : backendCategories) {
+                    sparseArray.put(category.ID, category);
+                }
+            } catch (RetrofitError error) {
+                //no matter.. I guess.
+                Log.w(TAG, "Failed to load categories from backend... That's a shame.", error);
+            }
+
+            //making sure we have at least one category (in case we failed loading from cache or from network
+            if (sparseArray.size() == 0) {
+                sparseArray.put(1, new Category(1, "Latest stories", "latest-stories", "", "http://www.storynory.com/category/latest-stories/", 0, null));
+            }
+            final Comparator<? super Category> categoriesIdComparator = (lhs, rhs) -> lhs.ID - rhs.ID;
+            Categories categories = new Categories();
+            for (int arrayKeyIndex = 0; arrayKeyIndex < sparseArray.size(); arrayKeyIndex++) {
+                categories.categories.add(sparseArray.valueAt(arrayKeyIndex));
+            }
+            Collections.sort(categories.categories, categoriesIdComparator);
+            subscriber.onNext(categories);
+
+            //writing to cache
+            try {
+                FileOutputStream outputStream = openFileOutput(LOCAL_CATEGORIES_CACHE_JSON, Context.MODE_PRIVATE);
+                OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+                mGson.toJson(categories, writer);
+                writer.close();
+            } catch (IOException e) {
+                //no matter.
+            }
+            subscriber.onCompleted();
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .cache(1);
+
         Observable.<Pair<Posts, List<OfflineState>>>create(subscriber -> {
             try {
                 //reading posts cache
-                Posts posts = readPostsCacheFromStream(openFileInput(LOCAL_POSTS_CACHE_JSON), mGson);
+                Posts posts = readCacheFromStream(openFileInput(LOCAL_POSTS_CACHE_JSON), mGson, Posts.class);
 
                 //offline state:
                 //first, deleting anything related to download in the temp folder
@@ -141,13 +210,6 @@ public class PostsModelService extends Service {
         }
     }
 
-    private static Posts readPostsCacheFromStream(FileInputStream postsCacheStream, Gson gson) throws IOException {
-        final InputStreamReader reader = new InputStreamReader(postsCacheStream);
-        Posts posts = gson.fromJson(reader, Posts.class);
-        reader.close();
-        return posts;
-    }
-
     @Nullable
     private static String getPostOfflineFilename(Post post) {
         Uri mediaLink = post.extractStoryAudioLink();
@@ -164,15 +226,7 @@ public class PostsModelService extends Service {
         //read from network
         mRestBackend.getLatestPosts()
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .map(postsArray -> {
-                    //updating local in-memory in UI thread
-                    mPosts.addPosts(postsArray);
-                    listener.onPostsFetchSuccess(mPosts);
-                    return mPosts;
-                })
-                .observeOn(Schedulers.io())//back to IO thread
-                .subscribe(posts -> {
                     try {
                         FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, Context.MODE_PRIVATE);
                         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
@@ -181,6 +235,12 @@ public class PostsModelService extends Service {
                     } catch (IOException e) {
                         //no matter.
                     }
+                    return postsArray;
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(postsArray -> {
+                    mPosts.addPosts(postsArray);
+                    listener.onPostsFetchSuccess(mPosts);
                 }, throwable -> listener.onPostsFetchError());
 
         return mPosts;
@@ -321,6 +381,11 @@ public class PostsModelService extends Service {
         @Override
         public void removeOfflineStateListener(@NonNull OfflineStateListener listener) {
             mOfflineStateListeners.remove(Preconditions.checkNotNull(listener));
+        }
+
+        @Override
+        public void setCategoriesListener(@NonNull CategoriesCallback listener) {
+            mCategoriesCache.subscribe(listener::onCategoriesAvailable);
         }
 
     }
