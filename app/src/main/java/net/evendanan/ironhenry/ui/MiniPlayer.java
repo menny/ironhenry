@@ -73,7 +73,7 @@ public class MiniPlayer implements StoryPlayerListener {
         miniPlayerRootView.setOnClickListener(v -> {
             if (mCurrentPlayingPost == null) return;
             final Context context = v.getContext();
-            Intent startPostPage = FragmentChauffeurActivity.addingFragmentToUi(MainActivity.class, context, PostFragment.create(mCurrentPlayingPost));
+            Intent startPostPage = FragmentChauffeurActivity.createStartActivityIntentForAddingFragmentToUi(context, MainActivity.class, PostFragment.create(mCurrentPlayingPost), FragmentChauffeurActivity.FragmentUiContext.IncomingAlert);
             context.startActivity(startPostPage);
         });
     }

@@ -56,7 +56,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
             PostFragment fragment = PostFragment.create(mData);
 
             FragmentChauffeurActivity activity = (FragmentChauffeurActivity) mContext;
-            activity.addFragmentToUi(fragment, FragmentChauffeurActivity.FragmentUiContext.ExpandedItem, itemView);
+            activity.addFragmentToUi(fragment, FragmentChauffeurActivity.FragmentUiContext.DeeperExperience, itemView);
         }
 
         public void setData(@NonNull Post data) {

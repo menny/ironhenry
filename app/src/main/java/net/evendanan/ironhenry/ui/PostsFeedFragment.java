@@ -15,6 +15,7 @@ import android.view.View;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
+import net.evendanan.ironhenry.model.Category;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.service.PostsFetchCallback;
 import net.evendanan.ironhenry.service.PostsModel;
@@ -29,12 +30,12 @@ import rx.Subscription;
 
 public class PostsFeedFragment extends CollapsibleFragmentBase {
 
-    private static final String ARG_POSTS_SLUG = "PostsFeedFragment_ARG_POSTS_SLUG";
-    private String mSlug;
+    private static final String ARG_CATEGORY = "PostsFeedFragment_ARG_CATEGORY";
+    private Category mCategory;
 
-    public static PostsFeedFragment createPostsFeedFragment(@NonNull String slug) {
+    public static PostsFeedFragment createPostsFeedFragment(@NonNull Category category) {
         Bundle args = new Bundle();
-        args.putString(ARG_POSTS_SLUG, Preconditions.checkNotNull(slug));
+        args.putParcelable(ARG_CATEGORY, Preconditions.checkNotNull(category));
 
         PostsFeedFragment fragment = new PostsFeedFragment();
         fragment.setArguments(args);
@@ -62,11 +63,11 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                         public void onClick(View v) {
                             if (mPostsModel != null) {
                                 mSwipeRefreshLayout.setRefreshing(true);
-                                mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
+                                mPostsModel.fetchPosts(mCategory.slug, mOnFeedAvailable);
                             }
                         }
                     })
-                    .show(); // Don’t forget to show!
+                    .show();
 
         }
     };
@@ -81,7 +82,7 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mSlug = Preconditions.checkNotNull(getArguments().getString(ARG_POSTS_SLUG));
+        mCategory = Preconditions.checkNotNull(getArguments().getParcelable(ARG_CATEGORY));
     }
 
     @Override
@@ -96,17 +97,17 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
             List<Post> loadedPosts = savedInstanceState.getParcelableArrayList(STATE_KEY_LOADED_POSTS_LIST);
             mFeedItemsAdapter.addPosts(loadedPosts);
         }
-        getCollapsingToolbar().setTitle(getText(R.string.latest_stories_feed_title));
+        getCollapsingToolbar().setTitle(mCategory.name);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setOnRefreshListener(() -> {
-            if (mPostsModel != null) mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
+            if (mPostsModel != null) mPostsModel.fetchPosts(mCategory.slug, mOnFeedAvailable);
         });
 
         mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
                 .subscribe(localBinder -> {
                     mPostsModel = (PostsModelService.LocalBinder) localBinder;
-                    List<Post> posts = mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
+                    List<Post> posts = mPostsModel.fetchPosts(mCategory.slug, mOnFeedAvailable);
                     if (posts != null && posts.size() > 0) {
                         setPosts(posts);
                     } else {

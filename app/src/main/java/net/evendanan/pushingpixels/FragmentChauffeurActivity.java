@@ -46,30 +46,19 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
 
     private static final String KEY_FRAGMENT_CLASS_TO_ADD = "KEY_FRAGMENT_CLASS_TO_ADD";
     private static final String KEY_FRAGMENT_ARGS_TO_ADD = "KEY_FRAGMENT_ARGS_TO_ADD";
-    private static final String KEY_FRAGMENT_AS_ROOT = "KEY_FRAGMENT_AS_ROOT";
-
-    public static void addIntentArgsForAddingFragmentToUi(@NonNull Intent intent, @NonNull Class<? extends Fragment> fragmentClass, @Nullable Bundle fragmentArgs) {
-        intent.putExtra(KEY_FRAGMENT_CLASS_TO_ADD, fragmentClass);
-        if (fragmentArgs != null) {
-            intent.putExtra(KEY_FRAGMENT_ARGS_TO_ADD, fragmentArgs);
-        }
-        intent.putExtra(KEY_FRAGMENT_AS_ROOT, false);
-    }
+    private static final String KEY_FRAGMENT_ANIMATION = "KEY_FRAGMENT_ANIMATION";
 
     @NonNull
-    public static Intent addingFragmentToUi(@NonNull Class<? extends FragmentChauffeurActivity> mainActivityClass,  @NonNull Context context, @NonNull Fragment fragment) {
+    public static Intent createStartActivityIntentForAddingFragmentToUi(@NonNull Context context, @NonNull Class<? extends FragmentChauffeurActivity> mainActivityClass, @NonNull Fragment fragment, @NonNull FragmentUiContext uiContext) {
         Intent intent = new Intent(Preconditions.checkNotNull(context), Preconditions.checkNotNull(mainActivityClass));
-        addIntentArgsForAddingFragmentToUi(intent, fragment.getClass(), fragment.getArguments());
-
-        return intent;
-    }
-
-    public static void addIntentArgsForSettingRootFragmentToUi(@NonNull Intent intent, @NonNull Class<? extends Fragment> fragmentClass, @Nullable Bundle fragmentArgs) {
-        intent.putExtra(KEY_FRAGMENT_CLASS_TO_ADD, fragmentClass);
+        intent.putExtra(KEY_FRAGMENT_CLASS_TO_ADD, Preconditions.checkNotNull(fragment).getClass());
+        Bundle fragmentArgs = fragment.getArguments();
         if (fragmentArgs != null) {
             intent.putExtra(KEY_FRAGMENT_ARGS_TO_ADD, fragmentArgs);
         }
-        intent.putExtra(KEY_FRAGMENT_AS_ROOT, true);
+        intent.putExtra(KEY_FRAGMENT_ANIMATION, uiContext);
+
+        return intent;
     }
 
     private boolean mIsActivityShown = false;
@@ -80,7 +69,7 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
         mIsActivityShown = true;
         if (savedInstanceState == null) {
             Bundle activityArgs = getIntent().getExtras();
-            if (activityArgs == null || (!activityArgs.containsKey(KEY_FRAGMENT_CLASS_TO_ADD)) || (!activityArgs.getBoolean(KEY_FRAGMENT_AS_ROOT, false))) {
+            if (activityArgs == null || (!activityArgs.containsKey(KEY_FRAGMENT_CLASS_TO_ADD)) || (activityArgs.getSerializable(KEY_FRAGMENT_ANIMATION) != FragmentUiContext.RootFragment)) {
                 //setting up the root of the UI.
                 setRootFragment(createRootFragmentInstance());
             }
@@ -97,7 +86,7 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
     private void handleFragmentIntentValues() {
         Bundle activityArgs = getIntent().getExtras();
         if (activityArgs != null && activityArgs.containsKey(KEY_FRAGMENT_CLASS_TO_ADD)) {
-            Class<? extends Fragment> fragmentClass = (Class<? extends Fragment>) activityArgs.get(KEY_FRAGMENT_CLASS_TO_ADD);
+            Class<? extends Fragment> fragmentClass = Preconditions.checkNotNull((Class<? extends Fragment>) activityArgs.get(KEY_FRAGMENT_CLASS_TO_ADD));
             //not sure that this is a best-practice, but I still need to remove this from the activity's args
             activityArgs.remove(KEY_FRAGMENT_CLASS_TO_ADD);
             try {
@@ -106,10 +95,11 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
                     fragment.setArguments(activityArgs.getBundle(KEY_FRAGMENT_ARGS_TO_ADD));
                     activityArgs.remove(KEY_FRAGMENT_CLASS_TO_ADD);
                 }
-                if (activityArgs.getBoolean(KEY_FRAGMENT_AS_ROOT, false)) {
+                FragmentUiContext uiContext = (FragmentUiContext)activityArgs.getSerializable(KEY_FRAGMENT_ANIMATION);
+                if (uiContext == FragmentUiContext.RootFragment) {
                     setRootFragment(fragment);
                 } else {
-                    addFragmentToUi(fragment, FragmentUiContext.RootFragment);
+                    addFragmentToUi(fragment, uiContext);
                 }
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -148,7 +138,7 @@ public abstract class FragmentChauffeurActivity extends AppCompatActivity {
      * Adds the given fragment into the UI using the specified UI-context animation.
      *
      * @param fragment      any generic Fragment. For the ExpandedItem animation it is best to use a PassengerFragment
-     * @param experience
+     * @param experience the animation UI exprience to use for this transition.
      * @param originateView a hint view which will be used to fine-tune the ExpandedItem animation
      */
     public void addFragmentToUi(@NonNull Fragment fragment, FragmentUiContext experience, @Nullable View originateView) {

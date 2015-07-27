@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.DrawerLayout;
 import android.view.Menu;
 import android.view.SubMenu;
 
@@ -44,8 +45,13 @@ public class MainActivity extends FragmentChauffeurActivity {
             SubMenu categoriesMenu = menu.addSubMenu(R.string.menu_story_categories_group);
             for (Category category : categories.categories) {
                 if (category.isRootCategory()) {//showing only root categories
-                    //TODO Add intent to each category item which starts the appropriate fragment
-                    categoriesMenu.add(1, category.ID, category.ID, category.name);
+                    categoriesMenu.add(1, category.ID, category.ID, category.name).setOnMenuItemClickListener(
+                            item -> {
+                                mDrawerLayout.closeDrawers();
+                                Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category.slug);
+                                addFragmentToUi(fragment, FragmentUiContext.RootFragment);
+                                return true;
+                            });
                     //TODO Add icon?
                 }
             }
@@ -57,6 +63,7 @@ public class MainActivity extends FragmentChauffeurActivity {
         }
     };
     private NavigationView mNavigationView;
+    private DrawerLayout mDrawerLayout;
 
 
     @Override
@@ -68,8 +75,8 @@ public class MainActivity extends FragmentChauffeurActivity {
         setContentView(R.layout.activity_main);
 
         mMiniPlayer = new MiniPlayer(findViewById(R.id.mini_player));
-
         mNavigationView = Preconditions.checkNotNull((NavigationView) findViewById(R.id.side_navigation_view));
+        mDrawerLayout = Preconditions.checkNotNull((DrawerLayout) findViewById(R.id.drawer_layout));
 
         mPlayerSubscription = Observable.create(new OnSubscribeBindService(this, StoryPlayerService.class))
                 .subscribe(localBinder -> {

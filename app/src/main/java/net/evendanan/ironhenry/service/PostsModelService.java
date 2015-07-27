@@ -227,7 +227,7 @@ public class PostsModelService extends Service {
     @Nullable
     private List<Post> fetchPosts(final @NonNull String slug, @NonNull final PostsFetchCallback listener) {
         //read from network
-        mRestBackend.getLatestPosts()
+        mRestBackend.getPostsForSlug(Preconditions.checkNotNull(slug))
                 .subscribeOn(Schedulers.io())
                 .map(postsArray -> {
                     try {
