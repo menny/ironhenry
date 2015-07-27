@@ -1,12 +1,15 @@
 package net.evendanan.ironhenry.service;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import net.evendanan.ironhenry.model.Post;
-import net.evendanan.ironhenry.model.Posts;
+
+import java.util.List;
 
 public interface PostsModel {
-    Posts fetchPosts(@NonNull PostsFetchCallback listener);
+    @Nullable
+    List<Post> fetchPosts(@NonNull String slug, @NonNull PostsFetchCallback listener);
 
     void setPostOfflineState(@NonNull Post post, boolean shouldBeAvailableOffline);
 

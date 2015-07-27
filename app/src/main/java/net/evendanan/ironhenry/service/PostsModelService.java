@@ -189,14 +189,16 @@ public class PostsModelService extends Service {
     @NonNull
     private static ArrayList<OfflineState> parseOfflinePostFiles(Posts posts, File cacheDir) {
         ArrayList<OfflineState> offlineStates = new ArrayList<>();
-        for (Post post : posts.posts) {
-            String postFilename = getPostOfflineFilename(post);
-            if (postFilename == null) continue;
-            File postOfflineFile = new File(cacheDir, postFilename);
-            if (postOfflineFile.exists()) {
-                OfflineState offlineState = new OfflineState(post);
-                offlineState.setDownloadProgress(OfflineState.PROGRESS_FULL);
-                offlineStates.add(offlineState);
+        for (Map.Entry<String, List<Post>> entry : posts.postsMap.entrySet()) {
+            for (Post post : entry.getValue()) {
+                String postFilename = getPostOfflineFilename(post);
+                if (postFilename == null) continue;
+                File postOfflineFile = new File(cacheDir, postFilename);
+                if (postOfflineFile.exists()) {
+                    OfflineState offlineState = new OfflineState(post);
+                    offlineState.setDownloadProgress(OfflineState.PROGRESS_FULL);
+                    offlineStates.add(offlineState);
+                }
             }
         }
         return offlineStates;
@@ -222,7 +224,8 @@ public class PostsModelService extends Service {
         return mLocalBinder;
     }
 
-    private Posts fetchPosts(@NonNull final PostsFetchCallback listener) {
+    @Nullable
+    private List<Post> fetchPosts(final @NonNull String slug, @NonNull final PostsFetchCallback listener) {
         //read from network
         mRestBackend.getLatestPosts()
                 .subscribeOn(Schedulers.io())
@@ -239,11 +242,11 @@ public class PostsModelService extends Service {
                 })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(postsArray -> {
-                    mPosts.addPosts(postsArray);
-                    listener.onPostsFetchSuccess(mPosts);
+                    List<Post> posts = mPosts.addPosts(slug, postsArray);
+                    listener.onPostsFetchSuccess(posts);
                 }, throwable -> listener.onPostsFetchError());
 
-        return mPosts;
+        return mPosts.postsMap.get(slug);
     }
 
     private void setPostOfflineState(final @NonNull Post post, boolean shouldBeAvailableOffline) {
@@ -358,8 +361,10 @@ public class PostsModelService extends Service {
         private final List<OfflineStateListener> mOfflineStateListeners = new ArrayList<>();
 
         @Override
-        public Posts fetchPosts(@NonNull PostsFetchCallback listener) {
-            return PostsModelService.this.fetchPosts(Preconditions.checkNotNull(listener));
+        public List<Post> fetchPosts(@NonNull String slug, @NonNull PostsFetchCallback listener) {
+            return PostsModelService.this.fetchPosts(
+                    Preconditions.checkNotNull(slug),
+                    Preconditions.checkNotNull(listener));
         }
 
         @Override

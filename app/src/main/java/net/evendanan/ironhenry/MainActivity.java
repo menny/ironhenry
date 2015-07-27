@@ -99,6 +99,6 @@ public class MainActivity extends FragmentChauffeurActivity {
 
     @Override
     protected Fragment createRootFragmentInstance() {
-        return new PostsFeedFragment();
+        return PostsFeedFragment.createPostsFeedFragment("latest-stories");
     }
 }

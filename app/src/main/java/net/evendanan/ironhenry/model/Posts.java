@@ -2,6 +2,7 @@ package net.evendanan.ironhenry.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.v4.util.ArrayMap;
 import android.util.SparseArray;
 
 import com.google.gson.annotations.SerializedName;
@@ -10,23 +11,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class Posts implements Parcelable {
 
-    @SerializedName("posts")
-    public final List<Post> posts;
+    @SerializedName("postsMap")
+    public final Map<String, List<Post>> postsMap;
     private static final Comparator<? super Post> msPostsIdComparator = (lhs, rhs) -> rhs.ID - lhs.ID;
 
     public Posts() {
-        posts = new ArrayList<>();
+        postsMap = new ArrayMap<>();
     }
 
     protected Posts(Parcel in) {
-        posts = new ArrayList<>();
-        in.readList(posts, Posts.class.getClassLoader());
+        postsMap = new ArrayMap<>();
+        in.readMap(postsMap, Posts.class.getClassLoader());
     }
 
-    public void addPosts(Post[] newPosts) {
+    public List<Post> addPosts(String slug, Post[] newPosts) {
+        List<Post> posts = postsMap.containsKey(slug)? postsMap.get(slug) : new ArrayList<>();
+        postsMap.put(slug, posts);
         //yes, I know it dumb. I'll optimize it later
         SparseArray<Post> sparseArray = new SparseArray<>(newPosts.length + posts.size());
         for (Post newPost : newPosts) {
@@ -45,6 +49,8 @@ public class Posts implements Parcelable {
             posts.add(sparseArray.valueAt(arrayKeyIndex));
         }
         Collections.sort(posts, msPostsIdComparator);
+
+        return posts;
     }
 
     public static final Creator<Posts> CREATOR = new Creator<Posts>() {
@@ -66,6 +72,6 @@ public class Posts implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeTypedList(posts);
+        dest.writeMap(postsMap);
     }
 }

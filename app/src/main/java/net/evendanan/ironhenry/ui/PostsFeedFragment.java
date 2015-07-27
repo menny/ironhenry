@@ -12,11 +12,12 @@ import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
 import android.view.View;
 
+import com.google.common.base.Preconditions;
+
 import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
-import net.evendanan.ironhenry.model.Posts;
-import net.evendanan.ironhenry.service.PostsModel;
 import net.evendanan.ironhenry.service.PostsFetchCallback;
+import net.evendanan.ironhenry.service.PostsModel;
 import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
@@ -28,13 +29,26 @@ import rx.Subscription;
 
 public class PostsFeedFragment extends CollapsibleFragmentBase {
 
+    private static final String ARG_POSTS_SLUG = "PostsFeedFragment_ARG_POSTS_SLUG";
+    private String mSlug;
+
+    public static PostsFeedFragment createPostsFeedFragment(@NonNull String slug) {
+        Bundle args = new Bundle();
+        args.putString(ARG_POSTS_SLUG, Preconditions.checkNotNull(slug));
+
+        PostsFeedFragment fragment = new PostsFeedFragment();
+        fragment.setArguments(args);
+
+        return fragment;
+    }
+
     private static final String STATE_KEY_LOADED_POSTS_LIST = "STATE_KEY_LOADED_POSTS_LIST";
 
     private final PostsFetchCallback mOnFeedAvailable = new PostsFetchCallback() {
         @Override
-        public void onPostsFetchSuccess(@NonNull Posts posts) {
+        public void onPostsFetchSuccess(@NonNull List<Post> posts) {
             mSwipeRefreshLayout.setRefreshing(false);
-            setPosts(posts.posts);
+            setPosts(posts);
         }
 
         @Override
@@ -48,7 +62,7 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                         public void onClick(View v) {
                             if (mPostsModel != null) {
                                 mSwipeRefreshLayout.setRefreshing(true);
-                                mPostsModel.fetchPosts(mOnFeedAvailable);
+                                mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
                             }
                         }
                     })
@@ -64,10 +78,10 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private FeedItemsAdapter mFeedItemsAdapter;
 
-    private void setPosts(@NonNull List<Post> posts) {
-        Context context = getActivity();
-        if (context == null) return;
-        mFeedItemsAdapter.addPosts(posts);
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mSlug = Preconditions.checkNotNull(getArguments().getString(ARG_POSTS_SLUG));
     }
 
     @Override
@@ -86,15 +100,15 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         mSwipeRefreshLayout.setOnRefreshListener(() -> {
-            if (mPostsModel != null) mPostsModel.fetchPosts(mOnFeedAvailable);
+            if (mPostsModel != null) mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
         });
 
         mModelSubscription = Observable.create(new OnSubscribeBindService(getActivity(), PostsModelService.class))
                 .subscribe(localBinder -> {
                     mPostsModel = (PostsModelService.LocalBinder) localBinder;
-                    Posts postsModel = mPostsModel.fetchPosts(mOnFeedAvailable);
-                    if (postsModel != null && postsModel.posts.size() > 0) {
-                        setPosts(postsModel.posts);
+                    List<Post> posts = mPostsModel.fetchPosts(mSlug, mOnFeedAvailable);
+                    if (posts != null && posts.size() > 0) {
+                        setPosts(posts);
                     } else {
                         /* Workaround ahead: https://code.google.com/p/android/issues/detail?id=77712*/
                         TypedValue typed_value = new TypedValue();
@@ -127,5 +141,11 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
     @Override
     protected int getContextLayoutResourceId() {
         return R.layout.fragment_feed;
+    }
+
+    private void setPosts(@NonNull List<Post> posts) {
+        Context context = getActivity();
+        if (context == null) return;
+        mFeedItemsAdapter.addPosts(posts);
     }
 }
