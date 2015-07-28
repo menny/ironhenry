@@ -1,6 +1,5 @@
 package net.evendanan.ironhenry.ui;
 
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -8,7 +7,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v7.graphics.Palette;
 import android.text.Html;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,8 +16,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
@@ -156,7 +152,7 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         getCollapsingToolbar().setTitle(mPost.title);
 
         ImageView postImage = (ImageView) view.findViewById(R.id.backdrop);
-        Glide.with(getActivity()).load(mPost.featuredImage.source).asBitmap().listener(new PaletteSetter()).into(postImage);
+        GlideUtils.loadPostImage(getActivity(), postImage, mPost, this);
 
         TextView postText = (TextView) view.findViewById(R.id.post);
         postText.setText(Html.fromHtml(mPost.htmlContent));
@@ -240,23 +236,6 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         if (newUiState != mCurrentDownloadUiState) {
             mCurrentDownloadUiState = newUiState;
             getActivity().supportInvalidateOptionsMenu();
-        }
-    }
-
-    private class PaletteSetter implements RequestListener<String, Bitmap> {
-
-        @Override
-        public boolean onException(Exception e, String model, Target<Bitmap> target, boolean isFirstResource) {
-            return false;
-        }
-
-        @Override
-        public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
-            Palette palette = Palette.from(resource).generate();
-            //using the highest population for the toolbar, so the text will have the maximum contrast.
-            final Palette.Swatch highestPopulationSwatch = PaletteUtils.getHighestPopulationSwatch(palette.getSwatches());
-            setToolbarColors(highestPopulationSwatch);
-            return false;
         }
     }
 

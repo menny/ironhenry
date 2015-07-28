@@ -27,9 +27,10 @@ public class Post implements Parcelable {
     @SerializedName("excerpt")
     public final String excerpt;
     @SerializedName("featured_image")
+    @Nullable
     public final FeatureImage featuredImage;
 
-    public Post(int id, String title, String htmlContent, String link, String modified, String excerpt, FeatureImage featuredImage) {
+    public Post(int id, String title, String htmlContent, String link, String modified, String excerpt, @Nullable FeatureImage featuredImage) {
         ID = id;
         this.title = title;
         this.htmlContent = htmlContent;

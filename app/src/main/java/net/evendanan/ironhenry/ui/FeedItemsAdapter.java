@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
@@ -91,7 +90,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Post item = mPostsList.get(position);
-        Glide.with(mContext).load(item.featuredImage.source).asBitmap().listener(new PaletteSetter(holder)).into(holder.imageView);
+        GlideUtils.loadPostImage(mContext, holder.imageView, item, new HolderPaletteSetter(holder));
         holder.title.setText(item.title);
         holder.excerpt.setText(Html.fromHtml(item.excerpt));
         holder.setData(item);
@@ -102,10 +101,10 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
         return mPostsList.size();
     }
 
-    private class PaletteSetter implements RequestListener<String, Bitmap> {
+    private class HolderPaletteSetter implements RequestListener<String, Bitmap> {
         private final ViewHolder mViewHolder;
 
-        public PaletteSetter(ViewHolder viewHolder) {
+        public HolderPaletteSetter(ViewHolder viewHolder) {
             mViewHolder = viewHolder;
         }
 

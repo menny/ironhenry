@@ -1,17 +1,19 @@
 package net.evendanan.ironhenry.model;
 
+import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.internal.LinkedTreeMap;
 
-import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Category implements Parcelable {
+    private static final Pattern msImagePattern = Pattern.compile("src=\"(http[^\"]*.png)\"", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    public static final Category LATEST_STORIES = new Category(1, "Latest Stories", "latest-stories", null, null, 0, null);
 
     @SerializedName("ID")
     public final int ID;
@@ -39,6 +41,19 @@ public class Category implements Parcelable {
         mParent = parent;
     }
 
+    @Nullable
+    public String extractCategoryImageFromDescription() {
+        if (TextUtils.isEmpty(htmlDescription)) {
+            return null;
+        }
+        Matcher pageMatcher = msImagePattern.matcher(htmlDescription);
+        while (pageMatcher.find()) {
+            if (pageMatcher.groupCount() == 1) return pageMatcher.group(1);
+        }
+
+        return null;
+    }
+
     public boolean isRootCategory() {
         return mParent == null;
     }
@@ -50,7 +65,7 @@ public class Category implements Parcelable {
         htmlDescription = in.readString();
         link = in.readString();
         count = in.readInt();
-        mParent = in.readInt() == 0? null : new Object();
+        mParent = in.readInt() == 0 ? null : new Object();
     }
 
     public static final Creator<Category> CREATOR = new Creator<Category>() {
@@ -78,6 +93,6 @@ public class Category implements Parcelable {
         dest.writeString(htmlDescription);
         dest.writeString(link);
         dest.writeInt(count);
-        dest.writeInt(isRootCategory()? 0 : 1);
+        dest.writeInt(isRootCategory() ? 0 : 1);
     }
 }

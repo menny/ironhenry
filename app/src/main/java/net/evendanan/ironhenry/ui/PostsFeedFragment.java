@@ -9,9 +9,12 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
+import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
@@ -119,6 +122,10 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
                         mSwipeRefreshLayout.setRefreshing(true);
                     }
                 });
+
+        final String backDropImage = mCategory.extractCategoryImageFromDescription();
+        ImageView backdropView = (ImageView) view.findViewById(R.id.backdrop);
+        GlideUtils.loadPostImage(getActivity(), backdropView, backDropImage, new PaletteSetter(this));
     }
 
     @Override

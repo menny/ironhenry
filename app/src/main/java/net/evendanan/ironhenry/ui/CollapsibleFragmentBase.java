@@ -1,7 +1,9 @@
 package net.evendanan.ironhenry.ui;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
@@ -13,9 +15,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import com.google.common.base.Preconditions;
+
 import net.evendanan.ironhenry.MainActivity;
 import net.evendanan.ironhenry.R;
 import net.evendanan.pushingpixels.PassengerFragment;
+
+import java.lang.ref.WeakReference;
 
 public abstract class CollapsibleFragmentBase extends PassengerFragment {
 
@@ -94,4 +102,5 @@ public abstract class CollapsibleFragmentBase extends PassengerFragment {
 
     @LayoutRes
     protected abstract int getContextLayoutResourceId();
+
 }

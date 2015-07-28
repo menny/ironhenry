@@ -2,6 +2,7 @@ package net.evendanan.ironhenry.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.v4.util.ArrayMap;
 import android.util.SparseArray;
 
@@ -73,5 +74,14 @@ public class Posts implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeMap(postsMap);
+    }
+
+    @NonNull
+    public Posts createCopy() {
+        Parcel canvas = Parcel.obtain();
+        writeToParcel(canvas, 0);
+        Posts posts = new Posts(canvas);
+        canvas.recycle();
+        return posts;
     }
 }

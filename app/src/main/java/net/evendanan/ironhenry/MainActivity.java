@@ -48,7 +48,7 @@ public class MainActivity extends FragmentChauffeurActivity {
                     categoriesMenu.add(1, category.ID, category.ID, category.name).setOnMenuItemClickListener(
                             item -> {
                                 mDrawerLayout.closeDrawers();
-                                Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category.slug);
+                                Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category);
                                 addFragmentToUi(fragment, FragmentUiContext.RootFragment);
                                 return true;
                             });
@@ -106,6 +106,6 @@ public class MainActivity extends FragmentChauffeurActivity {
 
     @Override
     protected Fragment createRootFragmentInstance() {
-        return PostsFeedFragment.createPostsFeedFragment("latest-stories");
+        return PostsFeedFragment.createPostsFeedFragment(Category.LATEST_STORIES);
     }
 }

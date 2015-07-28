@@ -124,7 +124,8 @@ public class PostsModelService extends Service {
 
             //making sure we have at least one category (in case we failed loading from cache or from network
             if (sparseArray.size() == 0) {
-                sparseArray.put(1, new Category(1, "Latest stories", "latest-stories", "", "http://www.storynory.com/category/latest-stories/", 0, null));
+                Category fallback = Category.LATEST_STORIES;
+                sparseArray.put(fallback.ID, fallback);
             }
             final Comparator<? super Category> categoriesIdComparator = (lhs, rhs) -> lhs.ID - rhs.ID;
             Categories categories = new Categories();
@@ -229,21 +230,23 @@ public class PostsModelService extends Service {
         //read from network
         mRestBackend.getPostsForSlug(Preconditions.checkNotNull(slug))
                 .subscribeOn(Schedulers.io())
-                .map(postsArray -> {
-                    try {
-                        FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, Context.MODE_PRIVATE);
-                        OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-                        mGson.toJson(mPosts, writer);
-                        writer.close();
-                    } catch (IOException e) {
-                        //no matter.
-                    }
-                    return postsArray;
-                })
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(postsArray -> {
                     List<Post> posts = mPosts.addPosts(slug, postsArray);
                     listener.onPostsFetchSuccess(posts);
+                    //updating the cache
+                    Observable.just(mPosts.createCopy())
+                            .subscribeOn(Schedulers.io())
+                            .subscribe(postsMap -> {
+                                try {
+                                    FileOutputStream outputStream = openFileOutput(LOCAL_POSTS_CACHE_JSON, Context.MODE_PRIVATE);
+                                    OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+                                    mGson.toJson(postsMap, writer);
+                                    writer.close();
+                                } catch (IOException e) {
+                                    //no matter.
+                                }
+                            });
                 }, throwable -> listener.onPostsFetchError());
 
         return mPosts.postsMap.get(slug);
