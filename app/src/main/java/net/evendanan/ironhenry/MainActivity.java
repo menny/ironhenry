@@ -50,8 +50,8 @@ public class MainActivity extends FragmentChauffeurActivity {
             menu.setGroupCheckable(R.id.categories_drawer_group, true, true);
             int itemOrder = 1;
             for (Category category : categories.categories) {
-                if (category.isRootCategory()) {//showing only root categories
-                    menu.add(R.id.categories_drawer_group, category.ID, itemOrder++, category.name)
+                if (category.isRootCategory() && category.count > 0) {//showing only root categories
+                    menu.add(R.id.categories_drawer_group, category.ID, itemOrder++, category.name + " ("+category.count+")")
                             .setCheckable(true)
                             .setChecked(false)
                             .setOnMenuItemClickListener(
