@@ -9,7 +9,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
-import android.view.SubMenu;
 
 import com.crashlytics.android.Crashlytics;
 import com.google.common.base.Preconditions;
@@ -44,30 +43,36 @@ public class MainActivity extends FragmentChauffeurActivity {
         public void onCategoriesAvailable(@NonNull Categories categories) {
             Menu menu = mNavigationView.getMenu();
             menu.clear();
-
             //adding categories
-            SubMenu categoriesMenu = menu.addSubMenu(R.string.menu_story_categories_group);
-            categoriesMenu.setGroupCheckable(R.id.categories_drawer_group, true, true);
+            menu.add(R.id.categories_drawer_group, 0, 0, R.string.menu_story_categories_group)
+                    .setEnabled(false)
+                    .setIcon(R.drawable.ic_drawer_categories);
+            menu.setGroupCheckable(R.id.categories_drawer_group, true, true);
+            int itemOrder = 1;
             for (Category category : categories.categories) {
                 if (category.isRootCategory()) {//showing only root categories
-                    categoriesMenu.add(R.id.categories_drawer_group, category.ID, category.ID, category.name).setOnMenuItemClickListener(
-                            item -> {
-                                item.setChecked(true);
-                                mSelectedNavigationItemId = category.ID;
-                                mDrawerLayout.closeDrawers();
-                                Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category);
-                                addFragmentToUi(fragment, FragmentUiContext.RootFragment);
-                                return true;
-                            });
+                    menu.add(R.id.categories_drawer_group, category.ID, itemOrder++, category.name)
+                            .setCheckable(true)
+                            .setChecked(false)
+                            .setOnMenuItemClickListener(
+                                    item -> {
+                                        item.setChecked(true);
+                                        menu.findItem(mSelectedNavigationItemId).setChecked(false);
+                                        mSelectedNavigationItemId = category.ID;
+                                        mDrawerLayout.closeDrawers();
+                                        Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category);
+                                        addFragmentToUi(fragment, FragmentUiContext.RootFragment);
+                                        return true;
+                                    });
                     //TODO Add icon?
                 }
             }
             menu.findItem(mSelectedNavigationItemId).setChecked(true);
             //adding static items
             //TODO Add settings fragment intent
-            menu.add(R.string.action_settings);
+            menu.add(R.id.settings_drawer_group, 0, itemOrder++, R.string.action_settings).setIcon(R.drawable.ic_drawer_settings);
             //TODO Add about fragment intent
-            menu.add(R.string.drawer_item_about_app);
+            menu.add(R.id.settings_drawer_group, 0, itemOrder, R.string.drawer_item_about_app).setIcon(R.drawable.ic_drawer_about);
         }
     };
     private NavigationView mNavigationView;

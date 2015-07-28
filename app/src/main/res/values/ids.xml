@@ -2,4 +2,5 @@
 <resources>
     <item name="story_playing" type="id"/>
     <item name="categories_drawer_group" type="id"/>
+    <item name="settings_drawer_group" type="id"/>
 </resources>
