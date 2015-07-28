@@ -1,9 +1,7 @@
 package net.evendanan.ironhenry.ui;
 
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
@@ -15,21 +13,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
-import com.google.common.base.Preconditions;
-
 import net.evendanan.ironhenry.MainActivity;
 import net.evendanan.ironhenry.R;
 import net.evendanan.pushingpixels.PassengerFragment;
-
-import java.lang.ref.WeakReference;
 
 public abstract class CollapsibleFragmentBase extends PassengerFragment {
 
     private static final String STATE_KEY_APP_BAR_TOP_OFFSET = "PostsFeedFragment_STATE_KEY_APP_BAR_TOP_OFFSET";
 
     private CollapsingToolbarLayout mCollapsingToolbar;
+    private AppBarLayout mAppBarLayout;
 
     @Nullable
     @Override
@@ -44,6 +37,7 @@ public abstract class CollapsibleFragmentBase extends PassengerFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        mAppBarLayout = (AppBarLayout) view.findViewById(R.id.appbar);
         mCollapsingToolbar = (CollapsingToolbarLayout) view.findViewById(R.id.collapsing_toolbar);
     }
 
@@ -74,8 +68,7 @@ public abstract class CollapsibleFragmentBase extends PassengerFragment {
         super.onSaveInstanceState(outState);
         View view = getView();
         if (view != null) {
-            AppBarLayout appBarLayout = (AppBarLayout) view.findViewById(R.id.appbar);
-            CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+            CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) mAppBarLayout.getLayoutParams();
             AppBarLayout.Behavior behavior = (AppBarLayout.Behavior) params.getBehavior();
             outState.putInt(STATE_KEY_APP_BAR_TOP_OFFSET, behavior.getTopAndBottomOffset());
         }
@@ -87,6 +80,10 @@ public abstract class CollapsibleFragmentBase extends PassengerFragment {
 
     protected final CollapsingToolbarLayout getCollapsingToolbar() {
         return mCollapsingToolbar;
+    }
+
+    protected final AppBarLayout getAppBarLayout() {
+        return mAppBarLayout;
     }
 
     protected void setToolbarColors(Palette.Swatch swatch) {

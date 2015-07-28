@@ -24,4 +24,6 @@
     <string name="menu_story_categories_group">Categories</string>
     <string name="close_drawer">Close</string>
     <string name="open_drawer">Open</string>
+    <string name="can_not_fetch_stories_snackbar_error">Can\'t fetch stories.</string>
+    <string name="retry_snackbar_action">Retry</string>
 </resources>

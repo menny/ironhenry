@@ -5,16 +5,15 @@ import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.bumptech.glide.Glide;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.R;
@@ -31,7 +30,7 @@ import java.util.List;
 import rx.Observable;
 import rx.Subscription;
 
-public class PostsFeedFragment extends CollapsibleFragmentBase {
+public class PostsFeedFragment extends CollapsibleFragmentBase implements AppBarLayout.OnOffsetChangedListener {
 
     private static final String ARG_CATEGORY = "PostsFeedFragment_ARG_CATEGORY";
     private Category mCategory;
@@ -60,8 +59,8 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
             View parent = getView();
             if (parent == null) return;
             mSwipeRefreshLayout.setRefreshing(false);
-            Snackbar.make(parent, "Can't fetch stories.", Snackbar.LENGTH_LONG)
-                    .setAction("Retry", new View.OnClickListener() {
+            Snackbar.make(parent, R.string.can_not_fetch_stories_snackbar_error, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.retry_snackbar_action, new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             if (mPostsModel != null) {
@@ -140,6 +139,18 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        getAppBarLayout().addOnOffsetChangedListener(this);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getAppBarLayout().removeOnOffsetChangedListener(this);
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         mModelSubscription.unsubscribe();
@@ -155,5 +166,11 @@ public class PostsFeedFragment extends CollapsibleFragmentBase {
         Context context = getActivity();
         if (context == null) return;
         mFeedItemsAdapter.addPosts(posts);
+    }
+
+    @Override
+    public void onOffsetChanged(AppBarLayout appBarLayout, int offset) {
+        //The Refresh must be only active when the offset is zero :
+        mSwipeRefreshLayout.setEnabled(offset == 0);
     }
 }
