@@ -22,4 +22,6 @@
     <string name="downloading_post">Downloading…</string>
     <string name="download_post_failed">Download failed!</string>
     <string name="menu_story_categories_group">Categories</string>
+    <string name="close_drawer">Close</string>
+    <string name="open_drawer">Open</string>
 </resources>

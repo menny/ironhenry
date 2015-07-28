@@ -6,6 +6,8 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.SubMenu;
 
@@ -28,6 +30,8 @@ import rx.Subscription;
 
 public class MainActivity extends FragmentChauffeurActivity {
 
+    private static final String STATE_SAVE_SELECT_NAV_ITEM_ID = "SELECT_NAV_ITEM_ID";
+
     private MiniPlayer mMiniPlayer;
 
     private Subscription mPlayerSubscription;
@@ -43,10 +47,13 @@ public class MainActivity extends FragmentChauffeurActivity {
 
             //adding categories
             SubMenu categoriesMenu = menu.addSubMenu(R.string.menu_story_categories_group);
+            categoriesMenu.setGroupCheckable(R.id.categories_drawer_group, true, true);
             for (Category category : categories.categories) {
                 if (category.isRootCategory()) {//showing only root categories
-                    categoriesMenu.add(1, category.ID, category.ID, category.name).setOnMenuItemClickListener(
+                    categoriesMenu.add(R.id.categories_drawer_group, category.ID, category.ID, category.name).setOnMenuItemClickListener(
                             item -> {
+                                item.setChecked(true);
+                                mSelectedNavigationItemId = category.ID;
                                 mDrawerLayout.closeDrawers();
                                 Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category);
                                 addFragmentToUi(fragment, FragmentUiContext.RootFragment);
@@ -55,6 +62,7 @@ public class MainActivity extends FragmentChauffeurActivity {
                     //TODO Add icon?
                 }
             }
+            menu.findItem(mSelectedNavigationItemId).setChecked(true);
             //adding static items
             //TODO Add settings fragment intent
             menu.add(R.string.action_settings);
@@ -64,6 +72,7 @@ public class MainActivity extends FragmentChauffeurActivity {
     };
     private NavigationView mNavigationView;
     private DrawerLayout mDrawerLayout;
+    private int mSelectedNavigationItemId;
 
 
     @Override
@@ -78,6 +87,12 @@ public class MainActivity extends FragmentChauffeurActivity {
         mNavigationView = Preconditions.checkNotNull((NavigationView) findViewById(R.id.side_navigation_view));
         mDrawerLayout = Preconditions.checkNotNull((DrawerLayout) findViewById(R.id.drawer_layout));
 
+        if (null == savedInstanceState) {
+            mSelectedNavigationItemId = Category.LATEST_STORIES.ID;
+        } else {
+            mSelectedNavigationItemId = savedInstanceState.getInt(STATE_SAVE_SELECT_NAV_ITEM_ID);
+        }
+
         mPlayerSubscription = Observable.create(new OnSubscribeBindService(this, StoryPlayerService.class))
                 .subscribe(localBinder -> {
                     mPlayerBinder = (StoryPlayerService.LocalBinder) localBinder;
@@ -89,6 +104,24 @@ public class MainActivity extends FragmentChauffeurActivity {
                     PostsModelService.LocalBinder binder = (PostsModelService.LocalBinder) localBinder;
                     binder.setCategoriesListener(mCategoriesAvailableHandler);
                 });
+    }
+
+    @Override
+    public void setSupportActionBar(@Nullable Toolbar toolbar) {
+        super.setSupportActionBar(toolbar);
+
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.open_drawer, R.string.close_drawer);
+        mDrawerLayout.setDrawerListener(toggle);
+        toggle.syncState();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mDrawerLayout.isDrawerVisible(mNavigationView)) {
+            mDrawerLayout.closeDrawers();
+        }
+        super.onBackPressed();
     }
 
     @Override

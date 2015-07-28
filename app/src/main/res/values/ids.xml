@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="story_playing" type="id"/>
+    <item name="categories_drawer_group" type="id"/>
 </resources>
