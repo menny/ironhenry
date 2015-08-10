@@ -27,9 +27,14 @@ import net.evendanan.ironhenry.ui.PostFragment;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
+import java.util.Locale;
+
 import io.fabric.sdk.android.Fabric;
 import rx.Observable;
 import rx.Subscription;
+import rx.android.plugins.RxAndroidPlugins;
+import rx.plugins.RxJavaErrorHandler;
+import rx.plugins.RxJavaPlugins;
 
 public class MainActivity extends FragmentChauffeurActivity {
 
@@ -87,9 +92,7 @@ public class MainActivity extends FragmentChauffeurActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!BuildConfig.DEBUG) {
-            Fabric.with(this, new Crashlytics());
-        }
+
         setContentView(R.layout.activity_main);
 
         mMiniPlayer = new MiniPlayer(findViewById(R.id.mini_player));

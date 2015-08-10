@@ -168,9 +168,9 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         mp.start();
         mPlayingSubscription = Observable.interval(16, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(time -> {
-                    mLocalBinder.onPlayerStateChanged(this);
-                });
+                .subscribe(time -> mLocalBinder.onPlayerStateChanged(this),
+                        error -> mLocalBinder.onPlayerStateChanged(this),
+                        () ->  mLocalBinder.onPlayerStateChanged(this));
     }
 
     public class LocalBinder extends Binder {
