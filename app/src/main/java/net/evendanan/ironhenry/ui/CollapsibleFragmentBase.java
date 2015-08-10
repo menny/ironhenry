@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
@@ -15,9 +16,8 @@ import android.view.ViewGroup;
 
 import net.evendanan.ironhenry.MainActivity;
 import net.evendanan.ironhenry.R;
-import net.evendanan.pushingpixels.PassengerFragment;
 
-public abstract class CollapsibleFragmentBase extends PassengerFragment {
+public abstract class CollapsibleFragmentBase extends Fragment {
 
     private static final String STATE_KEY_APP_BAR_TOP_OFFSET = "PostsFeedFragment_STATE_KEY_APP_BAR_TOP_OFFSET";
 

@@ -16,12 +16,13 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
 
+import net.evendanan.chauffeur.lib.FragmentChauffeurActivity;
+import net.evendanan.chauffeur.lib.experiences.TransitionExperiences;
 import net.evendanan.ironhenry.MainActivity;
 import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.service.StoryPlayer;
 import net.evendanan.ironhenry.service.StoryPlayerListener;
-import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
 import java.io.IOException;
 
@@ -73,7 +74,7 @@ public class MiniPlayer implements StoryPlayerListener {
         miniPlayerRootView.setOnClickListener(v -> {
             if (mCurrentPlayingPost == null) return;
             final Context context = v.getContext();
-            Intent startPostPage = FragmentChauffeurActivity.createStartActivityIntentForAddingFragmentToUi(context, MainActivity.class, PostFragment.create(mCurrentPlayingPost), FragmentChauffeurActivity.FragmentUiContext.IncomingAlert);
+            Intent startPostPage = FragmentChauffeurActivity.createStartActivityIntentForAddingFragmentToUi(context, MainActivity.class, PostFragment.create(mCurrentPlayingPost), TransitionExperiences.DIALOG_EXPERIENCE_TRANSITION);
             context.startActivity(startPostPage);
         });
     }

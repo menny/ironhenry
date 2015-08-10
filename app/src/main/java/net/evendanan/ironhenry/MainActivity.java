@@ -13,6 +13,8 @@ import android.view.Menu;
 import com.crashlytics.android.Crashlytics;
 import com.google.common.base.Preconditions;
 
+import net.evendanan.chauffeur.lib.FragmentChauffeurActivity;
+import net.evendanan.chauffeur.lib.experiences.TransitionExperiences;
 import net.evendanan.ironhenry.model.Categories;
 import net.evendanan.ironhenry.model.Category;
 import net.evendanan.ironhenry.service.CategoriesCallback;
@@ -21,7 +23,6 @@ import net.evendanan.ironhenry.service.StoryPlayerService;
 import net.evendanan.ironhenry.ui.MiniPlayer;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
-import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
 import io.fabric.sdk.android.Fabric;
 import rx.Observable;
@@ -61,7 +62,7 @@ public class MainActivity extends FragmentChauffeurActivity {
                                         mSelectedNavigationItemId = category.ID;
                                         mDrawerLayout.closeDrawers();
                                         Fragment fragment = PostsFeedFragment.createPostsFeedFragment(category);
-                                        addFragmentToUi(fragment, FragmentUiContext.RootFragment);
+                                        addFragmentToUi(fragment, TransitionExperiences.ROOT_FRAGMENT_EXPERIENCE_TRANSITION);
                                         return true;
                                     });
                     //TODO Add icon?
@@ -143,6 +144,7 @@ public class MainActivity extends FragmentChauffeurActivity {
     }
 
     @Override
+    @NonNull
     protected Fragment createRootFragmentInstance() {
         return PostsFeedFragment.createPostsFeedFragment(Category.LATEST_STORIES);
     }

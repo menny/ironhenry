@@ -18,9 +18,10 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.google.common.base.Preconditions;
 
+import net.evendanan.chauffeur.lib.FragmentChauffeurActivity;
+import net.evendanan.chauffeur.lib.experiences.TransitionExperiences;
 import net.evendanan.ironhenry.R;
 import net.evendanan.ironhenry.model.Post;
-import net.evendanan.pushingpixels.FragmentChauffeurActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
             PostFragment fragment = PostFragment.create(mData);
 
             FragmentChauffeurActivity activity = (FragmentChauffeurActivity) mContext;
-            activity.addFragmentToUi(fragment, FragmentChauffeurActivity.FragmentUiContext.DeeperExperience, itemView);
+            activity.addFragmentToUi(fragment, TransitionExperiences.DEEPER_EXPERIENCE_TRANSITION);
         }
 
         public void setData(@NonNull Post data) {
@@ -157,6 +158,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
         return insertPosition;
     }
 
+    @NonNull
     public List<Post> getPostsList() {
         return mPostsList;
     }
