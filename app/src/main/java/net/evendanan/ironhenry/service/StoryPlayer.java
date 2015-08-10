@@ -12,6 +12,8 @@ public interface StoryPlayer {
 
     void pauseAudio();
 
+    void stopAudio();
+
     void seek(int seconds);
 
     boolean isPlaying();

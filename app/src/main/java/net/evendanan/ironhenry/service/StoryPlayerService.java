@@ -2,8 +2,10 @@ package net.evendanan.ironhenry.service;
 
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
@@ -13,6 +15,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
+import com.crashlytics.android.Crashlytics;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.ironhenry.BuildConfig;
@@ -39,6 +42,48 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Nullable
     private Subscription mPlayingSubscription;
+    private AudioManager mAudioManager;
+    private final AudioManager.OnAudioFocusChangeListener mAudioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+        private static final int VOLUME_NO_OP = -1;
+        private boolean mHadTransientLost = false;
+        private int mOriginalStreamVolume = VOLUME_NO_OP;
+
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            Crashlytics.log(Log.DEBUG, TAG, "onAudioFocusChange " + focusChange);
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS && mMediaPlayer.isPlaying()) {
+                mHadTransientLost = false;
+                mOriginalStreamVolume = VOLUME_NO_OP;
+                Crashlytics.log(Log.DEBUG, TAG, "Stopping playback because AUDIOFOCUS_LOSS");
+                stopAudio();
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT && mMediaPlayer.isPlaying()) {
+                Crashlytics.log(Log.DEBUG, TAG, "Pausing playback because AUDIOFOCUS_LOSS_TRANSIENT");
+                mHadTransientLost = true;
+                mOriginalStreamVolume = VOLUME_NO_OP;
+                // Pause playback
+                mMediaPlayer.pause();
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK && mMediaPlayer.isPlaying()) {
+                //Lower the volume
+                mHadTransientLost = true;
+                mOriginalStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+                Crashlytics.log(Log.DEBUG, TAG, "Setting STREAM_MUSIC to 1 because AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK. Storing original volume "+mOriginalStreamVolume);
+                mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                if (mHadTransientLost) {
+                    Crashlytics.log(Log.DEBUG, TAG, "Starting playback because AUDIOFOCUS_GAIN");
+                    // Resume playback
+                    mMediaPlayer.start();
+                    //Raise it back to normal
+                    if (mOriginalStreamVolume != VOLUME_NO_OP) {
+                        Crashlytics.log(Log.DEBUG, TAG, "Setting STREAM_MUSIC to " + mOriginalStreamVolume + " because AUDIOFOCUS_GAIN");
+                        mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mOriginalStreamVolume, 0);
+                    }
+                    mHadTransientLost = false;
+                    mOriginalStreamVolume = VOLUME_NO_OP;
+                }
+            }
+        }
+    };
 
     public StoryPlayerService() {
         mMediaPlayer = new MediaPlayer();
@@ -49,8 +94,15 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+    }
+
+    @Override
     public void onDestroy() {
-        if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
+        if (mPlayingSubscription != null) mPlayingSubscription.unsubscribe();
+        mAudioManager.abandonAudioFocus(mAudioFocusChangeListener);
         mMediaPlayer.stop();
         mMediaPlayer.release();
         mLocalBinder.onPlayerStateChanged(this);
@@ -79,13 +131,21 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
         startForeground(R.id.story_playing, builder.build());
 
+        final int result = mAudioManager.requestAudioFocus(mAudioFocusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN);
+        Crashlytics.log(Log.DEBUG, TAG, "requestAudioFocus returned " + result);
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
+            return false;
+        }
+
         if (mCurrentlyPlayingPost == null || mCurrentlyPlayingPost.ID != post.ID) {
-            if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
+            if (mPlayingSubscription != null) mPlayingSubscription.unsubscribe();
             mLoading = true;
             mCurrentlyPlayingPost = post;
             mMediaPlayer.reset();
             Uri audioLink = PostsModelService.getPlayableLinkForPost(this, post);
-            Log.d(TAG, "Playing audio for post " + post.ID + " from " + audioLink);
+            Crashlytics.log(Log.DEBUG, TAG, "Playing audio for post " + post.ID + " from " + audioLink);
             mMediaPlayer.setDataSource(this, audioLink);
             mMediaPlayer.prepareAsync();
             mLocalBinder.onPlayerStateChanged(this);
@@ -101,10 +161,20 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     public void pauseAudio() {
         if (mMediaPlayer.isPlaying() && !mLoading) {
-            stopForeground(true);
             mMediaPlayer.pause();
             mLocalBinder.onPlayerStateChanged(this);
         }
+    }
+
+    @Override
+    public void stopAudio() {
+        stopForeground(true);
+        if (mPlayingSubscription != null) mPlayingSubscription.unsubscribe();
+        mLoading = false;
+        mCurrentlyPlayingPost = null;
+        mMediaPlayer.stop();
+        mLocalBinder.onPlayerStateChanged(this);
+        mAudioManager.abandonAudioFocus(mAudioFocusChangeListener);
     }
 
     public void seek(int seconds) {
@@ -131,22 +201,17 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
 
     @Override
     public int getPlayDuration() {
-        return mLoading? -1 : mMediaPlayer.getDuration();
+        return mLoading ? -1 : mMediaPlayer.getDuration();
     }
 
     @Override
     public int getCurrentPlayPosition() {
-        return mLoading? -1 : mMediaPlayer.getCurrentPosition();
+        return mLoading ? -1 : mMediaPlayer.getCurrentPosition();
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        stopForeground(true);
-        if (mPlayingSubscription != null ) mPlayingSubscription.unsubscribe();
-        mLoading = false;
-        mCurrentlyPlayingPost = null;
-        mLocalBinder.onPlayerStateChanged(this);
-
+        stopAudio();
     }
 
     @Override
@@ -154,6 +219,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
         stopForeground(true);
         mLoading = false;
         mLocalBinder.onPlayerStateChanged(this);
+        mAudioManager.abandonAudioFocus(mAudioFocusChangeListener);
         return false;
     }
 
@@ -171,7 +237,7 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(time -> mLocalBinder.onPlayerStateChanged(this),
                         error -> mLocalBinder.onPlayerStateChanged(this),
-                        () ->  mLocalBinder.onPlayerStateChanged(this));
+                        () -> mLocalBinder.onPlayerStateChanged(this));
     }
 
     public class LocalBinder extends Binder {
