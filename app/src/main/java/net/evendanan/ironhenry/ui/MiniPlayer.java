@@ -137,6 +137,7 @@ public class MiniPlayer implements StoryPlayerListener {
 
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
+            //I want this happen on the UI thread (less flickers)
             Palette palette = Palette.from(resource).generate();
             Palette.Swatch swatch = palette.getDarkMutedSwatch();
             if (swatch != null) {

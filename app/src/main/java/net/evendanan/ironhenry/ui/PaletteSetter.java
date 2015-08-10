@@ -25,12 +25,17 @@ public class PaletteSetter implements RequestListener<String, Bitmap> {
 
     @Override
     public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
-        CollapsibleFragmentBase collapsibleFragmentBase = mFragment.get();
-        if (collapsibleFragmentBase == null) return false;
-        Palette palette = Palette.from(resource).generate();
-        //using the highest population for the toolbar, so the text will have the maximum contrast.
-        final Palette.Swatch highestPopulationSwatch = PaletteUtils.getHighestPopulationSwatch(palette.getSwatches());
-        collapsibleFragmentBase.setToolbarColors(highestPopulationSwatch);
+        if (mFragment.get() == null) return false;
+        //generating OUTSIDE the UI thread
+        Palette.from(resource).generate(palette -> {
+            CollapsibleFragmentBase collapsibleFragmentBase = mFragment.get();
+            if (collapsibleFragmentBase != null) {
+                //using the highest population for the toolbar, so the text will have the maximum contrast.
+                final Palette.Swatch highestPopulationSwatch = PaletteUtils.getHighestPopulationSwatch(palette.getSwatches());
+                collapsibleFragmentBase.setToolbarColors(highestPopulationSwatch);
+            }
+        });
+
         return false;
     }
 }

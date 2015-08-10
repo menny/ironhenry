@@ -116,6 +116,7 @@ public class FeedItemsAdapter extends RecyclerView.Adapter<FeedItemsAdapter.View
 
         @Override
         public boolean onResourceReady(Bitmap resource, String model, Target<Bitmap> target, boolean isFromMemoryCache, boolean isFirstResource) {
+            //I want this to happen on the UI thread (less flickers)
             Palette palette = Palette.from(resource).generate();
             Palette.Swatch swatch = palette.getLightVibrantSwatch();
             if (swatch != null) {
