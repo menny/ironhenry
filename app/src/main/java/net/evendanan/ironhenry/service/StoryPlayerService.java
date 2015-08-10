@@ -166,7 +166,8 @@ public class StoryPlayerService extends Service implements StoryPlayer, MediaPla
     public void onPrepared(MediaPlayer mp) {
         mLoading = false;
         mp.start();
-        mPlayingSubscription = Observable.interval(16, TimeUnit.MILLISECONDS)
+        mPlayingSubscription = Observable.interval(16/*frame*/, TimeUnit.MILLISECONDS)
+                .onBackpressureBuffer()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(time -> mLocalBinder.onPlayerStateChanged(this),
                         error -> mLocalBinder.onPlayerStateChanged(this),

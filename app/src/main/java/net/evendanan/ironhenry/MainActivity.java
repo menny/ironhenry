@@ -10,7 +10,6 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.chauffeur.lib.FragmentChauffeurActivity;
@@ -27,14 +26,8 @@ import net.evendanan.ironhenry.ui.PostFragment;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
-import java.util.Locale;
-
-import io.fabric.sdk.android.Fabric;
 import rx.Observable;
 import rx.Subscription;
-import rx.android.plugins.RxAndroidPlugins;
-import rx.plugins.RxJavaErrorHandler;
-import rx.plugins.RxJavaPlugins;
 
 public class MainActivity extends FragmentChauffeurActivity {
 
