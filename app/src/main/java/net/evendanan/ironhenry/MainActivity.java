@@ -14,13 +14,16 @@ import com.crashlytics.android.Crashlytics;
 import com.google.common.base.Preconditions;
 
 import net.evendanan.chauffeur.lib.FragmentChauffeurActivity;
+import net.evendanan.chauffeur.lib.TransitionExperience;
 import net.evendanan.chauffeur.lib.experiences.TransitionExperiences;
 import net.evendanan.ironhenry.model.Categories;
 import net.evendanan.ironhenry.model.Category;
+import net.evendanan.ironhenry.model.Post;
 import net.evendanan.ironhenry.service.CategoriesCallback;
 import net.evendanan.ironhenry.service.PostsModelService;
 import net.evendanan.ironhenry.service.StoryPlayerService;
 import net.evendanan.ironhenry.ui.MiniPlayer;
+import net.evendanan.ironhenry.ui.PostFragment;
 import net.evendanan.ironhenry.ui.PostsFeedFragment;
 import net.evendanan.ironhenry.utils.OnSubscribeBindService;
 
@@ -52,7 +55,7 @@ public class MainActivity extends FragmentChauffeurActivity {
             int itemOrder = 1;
             for (Category category : categories.categories) {
                 if (category.isRootCategory() && category.count > 0) {//showing only root categories
-                    menu.add(R.id.categories_drawer_group, category.ID, itemOrder++, category.name + " ("+category.count+")")
+                    menu.add(R.id.categories_drawer_group, category.ID, itemOrder++, category.name + " (" + category.count + ")")
                             .setCheckable(true)
                             .setChecked(false)
                             .setOnMenuItemClickListener(
@@ -110,6 +113,28 @@ public class MainActivity extends FragmentChauffeurActivity {
                     PostsModelService.LocalBinder binder = (PostsModelService.LocalBinder) localBinder;
                     binder.setCategoriesListener(mCategoriesAvailableHandler);
                 });
+    }
+
+    @Override
+    public void addFragmentToUi(@NonNull Fragment fragment, @NonNull TransitionExperience experience) {
+        //ignoring, if the fragment is PostFragment, and the current fragment is also PostFragment,
+        //and both pointing to the same post
+        if (!isFragmentSameAsCurrent(fragment)) {
+            super.addFragmentToUi(fragment, experience);
+        }
+    }
+
+    private boolean isFragmentSameAsCurrent(@NonNull Fragment incomingFragment) {
+        if (incomingFragment instanceof PostFragment) {
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(getFragmentRootUiElementId());
+            if (currentFragment instanceof PostFragment) {
+                Post incomingPost = PostFragment.getPostFromArgs(incomingFragment);
+                Post currentPost = PostFragment.getPostFromArgs(currentFragment);
+
+                return incomingPost.ID == currentPost.ID;
+            }
+        }
+        return false;
     }
 
     @Override

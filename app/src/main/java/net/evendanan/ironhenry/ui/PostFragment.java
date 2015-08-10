@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.text.Html;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -72,6 +73,10 @@ public class PostFragment extends CollapsibleFragmentBase implements StoryPlayer
         fragment.setArguments(args);
 
         return fragment;
+    }
+
+    public static Post getPostFromArgs(Fragment fragment) {
+        return fragment.getArguments().getParcelable(ARG_KEY_POST);
     }
 
     @Override
